@@ -1,0 +1,41 @@
+### config
+NAME		= webserv
+CC			= c++
+CFLAGS		= -std=c++98 -Wall -Werror -Wextra
+DEPFLAGS	= -MMD -MP
+AUTHOR		= elleroux
+DATE		= 2025/03/31 20:11:19
+
+
+### program files
+FILE_EXTENSION	= .cpp
+SRCS_PATH		= ./src
+INCLUDE_PATH	= ./inc
+OBJ_PATH		= ./.obj
+SRCS			= $(wildcard $(SRCS_PATH)/*$(FILE_EXTENSION))
+HEADERS			= $(wildcard $(INCLUDE_PATH)/*.hpp)
+
+### objects definition
+OBJS = $(patsubst $(SRCS_PATH)/%$(FILE_EXTENSION),$(OBJ_PATH)/%.o,$(SRCS))
+DEPS = $(patsubst $(SRCS_PATH)/%$(FILE_EXTENSION),$(OBJ_PATH)/%.d,$(SRCS))
+
+### Makefile rules
+all: $(NAME)
+
+$(NAME): ${OBJS}
+	$(CC) $(CFLAGS) -o $@ ${OBJS}
+
+$(OBJ_PATH)/%.o: $(SRCS_PATH)/%$(FILE_EXTENSION) $(HEADERS) Makefile
+	mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(DEPFLAGS) -c $< -o $@ -I$(INCLUDE_PATH)
+
+clean:
+	@rm -fr $(OBJ_PATH)
+
+fclean: clean
+	@rm -rf $(NAME)
+
+re: fclean all
+
+-include $(DEPS)
+.PHONY: all clean fclean re
