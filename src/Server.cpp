@@ -1,6 +1,7 @@
 #include "Server.hpp"
 
-//#include <iostream>
+#include <iostream>
+#include <errno.h>
 
 #ifndef COLORS
 
@@ -10,12 +11,30 @@
 #endif
 
 // Constructors
-Server::Server(void)
+Server::Server(short port)
 {
 	// std::cout << GREY << "Server constructor called" << RESET << std::endl;
-	this->_fd = socket(AF_INET, SOCK_STREAM, 0);
-	bind(this->_fd, (struct sockaddr*) INADDR_ANY, 0);
-	listen(this->_fd, 0);
+
+	int fd = socket(AF_INET, SOCK_STREAM, 0);
+	if (fd == -1)
+		std::cerr << "Server error: cannot open socket" << std::endl;
+
+	sockaddr_in	addr;
+	addr.sin_port = htons(port);
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = (INADDR_ANY);
+	if (bind(fd, (sockaddr*)&addr, sizeof(addr)) == -1)
+		std::cerr << "Server error: cannot assining name to socket" << std::endl;
+
+	this->_fd = listen(fd, 10);
+	if (this->_fd == -1)
+		std::cerr << "Server error: cannot set socket to listening state" << std::endl;
+
+	if (accept(this->_fd, NULL, NULL) == -1)
+		std::cerr << "Server error: cannot set socket to accept connection" << std::endl;
+
+	std::cout << "Server logging: Now listening for incomming connections" << std::endl;
+
 	return;
 }
 

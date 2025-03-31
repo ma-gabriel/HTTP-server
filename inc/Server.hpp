@@ -9,7 +9,7 @@ class Server
 {
 public:
 // Constructors
-	Server(void);
+	Server(short port);
 	Server(const Server &from);
 // Destructors
 	~Server(void);
