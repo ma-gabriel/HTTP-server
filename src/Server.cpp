@@ -26,12 +26,37 @@ Server::Server(short port)
 	if (bind(fd, (sockaddr*)&addr, sizeof(addr)) == -1)
 		std::cerr << "Server error: cannot assining name to socket" << std::endl;
 
-	this->_fd = listen(fd, 10);
-	if (this->_fd == -1)
+	if (listen(fd, 10) == -1)
 		std::cerr << "Server error: cannot set socket to listening state" << std::endl;
 
-	if (accept(this->_fd, NULL, NULL) == -1)
-		std::cerr << "Server error: cannot set socket to accept connection" << std::endl;
+	this->_fd = accept(fd, NULL, NULL);
+	if (this->_fd == -1)
+	{
+		if (errno == EAGAIN)
+			std::cerr << "Server accept error: EAGAIN" << std::endl;
+		if (errno == EBADF)
+			std::cerr << "Server accept error: EBADF" << std::endl;
+		if (errno == ECONNABORTED)
+			std::cerr << "Server accept error: ECONNABORTED" << std::endl;
+		if (errno == EFAULT)
+			std::cerr << "Server accept error: EFAULT" << std::endl;
+		if (errno == EINTR)
+			std::cerr << "Server accept error: EINTR" << std::endl;
+		if (errno == EINVAL)
+			std::cerr << "Server accept error: EINVAL" << std::endl;
+		if (errno == EMFILE)
+			std::cerr << "Server accept error: EMFILE" << std::endl;
+		if (errno == ENFILE)
+			std::cerr << "Server accept error: ENFILE" << std::endl;
+		if (errno == ENOTSOCK)
+			std::cerr << "Server accept error: ENOTSOCK" << std::endl;
+		if (errno == EOPNOTSUPP)
+			std::cerr << "Server accept error: EOPNOTSUPP" << std::endl;
+		if (errno == EPROTO)
+			std::cerr << "Server accept error: EPROTO" << std::endl;
+	}
+
+	// 	std::cerr << "Server error: cannot set socket to accept connection" << std::endl;
 
 	std::cout << "Server logging: Now listening for incomming connections" << std::endl;
 
