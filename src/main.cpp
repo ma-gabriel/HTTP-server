@@ -1,18 +1,19 @@
-#include "Socket.hpp"
+#include "Server.hpp"
 #include "Epoll.hpp"
 
 #include <iostream>
+#include <cstring>
 #include <string>
 
 int main(void)
 {
-	Socket serv_sock(9080);
-	// TODO: set serv_sock to reuse port
+	Server serv(8080);
 
 	Epoll epoll;
-	epoll.addFd(serv_sock.getFd());
+	epoll.addFd(serv.getSocketFd());
 
-	while (1)
+	bool running = true;
+	while (running)
 	{
 		int event_quant;
 		epoll_event* events = epoll.getEventsPtr();
@@ -27,8 +28,8 @@ int main(void)
 				close (events[i].data.fd);
 				continue;
 			}
-			else if (events[i].data.fd == serv_sock.getFd())
-				serv_sock.handleNewClients(epoll);
+			else if (events[i].data.fd == serv.getSocketFd())
+				serv.handleNewClients(epoll);
 			else
 			{
 				char buff[512];
@@ -37,6 +38,8 @@ int main(void)
 				readed = read(events[i].data.fd, buff, sizeof(buff));
 				buff[readed] = '\0';
 				std::cout << buff << std::endl;
+				if (strcmp(buff, "STOP\n") == 0)
+					running = false;
 			}
 	   }
 	}
