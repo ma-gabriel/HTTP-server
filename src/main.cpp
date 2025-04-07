@@ -38,8 +38,11 @@ int main(void)
 				readed = read(events[i].data.fd, buff, sizeof(buff));
 				buff[readed] = '\0';
 				std::cout << buff << std::endl;
-				if (strcmp(buff, "STOP\n") == 0)
-					running = false;
+
+				std::string resp = "HTTP/1.1 200 OK\r\nContent-Length: 12\r\nContent-Type: text/plain\r\n\r\nHello, World\n";
+				write(events[i].data.fd, resp.c_str(), resp.length());
+				epoll.delFd(events[i].data.fd);
+				close(events[i].data.fd);
 			}
 	   }
 	}
