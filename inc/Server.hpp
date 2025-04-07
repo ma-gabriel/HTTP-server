@@ -21,13 +21,16 @@ public:
 // Overloaded operators
 	Server &operator=(const Server &from);
 // Getters
+	short getPort(void) const;
 	int getSocketFd(void) const;
+	int getClientNumber(void) const;
 // Setters
 // Public member functions
 	void handleNewClients(Epoll& epoll);
 	static void setServerNonBlocking(int sfd);
 
 private:
+	short _port;
 	int _socket;
 	std::deque<int> _clients;
 };

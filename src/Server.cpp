@@ -6,7 +6,6 @@
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <algorithm>
-#include <functional>
 
 #include "Epoll.hpp"
 
@@ -18,7 +17,7 @@
 #endif
 
 // Constructors
-Server::Server(short port)
+Server::Server(short port) : _port(port)
 {
 	// std::cout << GREY << "Server constructor called" << RESET << std::endl;
 
@@ -65,6 +64,11 @@ Server::Server(short port)
 		close(this->_socket);
 		return ;
 	}
+
+#ifdef DEBUG
+	std::cout << "Server now listing on " << inet_ntoa(addr.sin_addr) << " port " << port << std::endl;
+#endif
+
 }
 
 Server::Server(const Server &from)
@@ -94,9 +98,19 @@ Server& Server::operator=(const Server &from)
 }
 
 // Getters
+short Server::getPort(void) const
+{
+	return (this->_port);
+}
+
 int Server::getSocketFd(void) const
 {
 	return (this->_socket);
+}
+
+int Server::getClientNumber(void) const
+{
+	return (this->_clients.size());
 }
 
 // Setters
@@ -143,6 +157,9 @@ void Server::setServerNonBlocking(int sfd)
 // Overloaded print operator
 std::ostream& operator<<(std::ostream& stream, const Server& instance)
 {
-	stream << instance.getSocketFd();
+	stream << "Server: ";
+	stream << "fdSocket -> " << instance.getSocketFd();
+	stream << "port -> " << instance.getSocketFd();
+	stream << "nbClients -> " << instance.getClientNumber();
 	return (stream);
 }
