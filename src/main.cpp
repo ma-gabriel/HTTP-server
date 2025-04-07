@@ -23,7 +23,7 @@ int main(void)
 			perror("epoll_wait");
 		for (int i = 0; i < event_quant; i++)
 		{
-			if (!(events[i].data.fd & EPOLLIN))
+			if (!(events[i].events & EPOLLIN))
 			{
 				close (events[i].data.fd);
 				continue;
