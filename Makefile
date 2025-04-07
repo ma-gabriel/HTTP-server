@@ -35,6 +35,10 @@ clean:
 fclean: clean
 	@rm -rf $(NAME)
 
+debug: fclean
+debug: CFLAGS += -DDEBUG -g3
+debug: all
+
 re: fclean all
 
 -include $(DEPS)
