@@ -80,6 +80,19 @@ void Epoll::addFd(int fd) const
 	}
 }
 
+void Epoll::delFd(int fd) const
+{
+	struct epoll_event event;
+
+	event.data.fd = fd;
+
+	if (epoll_ctl(this->_fd, EPOLL_CTL_DEL, fd, NULL) == -1)
+	{
+		perror("epoll_ctl");
+		return;
+	}
+}
+
 // Overloaded print operator
 std::ostream& operator<<(std::ostream& stream, const Epoll& instance)
 {

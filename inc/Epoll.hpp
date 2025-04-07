@@ -26,6 +26,7 @@ public:
 // Setters
 // Public member functions
 	void addFd(int fd) const;
+	void delFd(int fd) const;
 
 private:
 	int _fd;
