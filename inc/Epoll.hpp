@@ -6,7 +6,10 @@
 #include <sys/epoll.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <vector>
 #include <stdio.h>
+
+#include "Server.hpp"
 
 #define MAXEVENT 64
 
@@ -25,12 +28,15 @@ public:
 	struct epoll_event* getEventsPtr(void) const;
 // Setters
 // Public member functions
+	void routine(Server& serv);
+	void handleEvents(struct epoll_event event, Server& serv);
+	void handleNewClients(int sock, Server& serv) const;
 	void addFd(int fd) const;
-	void delFd(int fd) const;
+	void delAndCloseSocket(int sock, Server& serv) const;
 
 private:
 	int _fd;
-	struct epoll_event *events;
+	struct epoll_event *_events;
 };
 
 std::ostream& operator<<(std::ostream& stream, const Epoll& instance);

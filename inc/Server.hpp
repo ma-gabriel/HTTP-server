@@ -7,6 +7,7 @@
 # include <netinet/in.h>
 # include <errno.h>
 # include <deque>
+# include <map>
 
 class Epoll;
 
@@ -14,24 +15,27 @@ class Server
 {
 public:
 // Constructors
-	Server(short port);
+	Server(void);
 	Server(const Server &from);
 // Destructors
 	~Server(void);
 // Overloaded operators
 	Server &operator=(const Server &from);
 // Getters
-	short getPort(void) const;
-	int getSocketFd(void) const;
 	int getClientNumber(void) const;
+	int getSocketFromPort(short port);
 // Setters
+	void delClient(int sock);
+// Checkers
+	bool isServSocket(int fd) const;
 // Public member functions
-	void handleNewClients(Epoll& epoll);
-	static void setServerNonBlocking(int sfd);
+	int newInstance(short port);
+	int newClient(int sock);
+	void handleNewClients(Epoll& epoll, int socket);
+	static void setSocketNonBlocking(int sfd);
 
 private:
-	short _port;
-	int _socket;
+	std::map<int, short> _instances;
 	std::deque<int> _clients;
 };
 

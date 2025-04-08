@@ -17,58 +17,9 @@
 #endif
 
 // Constructors
-Server::Server(short port) : _port(port)
+Server::Server(void)
 {
 	// std::cout << GREY << "Server constructor called" << RESET << std::endl;
-
-	// Oppening socket for IPv4 communication (AF_INET),
-	// using TCP protocol (SOCK_STREAM), and non-blocking fd (SOCK_NONBLOCK)
-	this->_socket = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
-	if (this->_socket == -1)
-	{
-		perror("socket");
-		return ;
-	}
-
-	// Enabling (opt_value = 1) different options on socket,
-	// to reuse same addresss multiple time (SO_REUSEADDR), and
-	// to reuse same port multiple time (SO_REUSEPORT),
-	// to prevent port/address lock after innatended program end
-	int opt_value = 1;
-	if (setsockopt(this->_socket, SOL_SOCKET, SO_REUSEADDR, &opt_value, sizeof(int)) == -1)
-		perror("setsockopt");
-	if (setsockopt(this->_socket, SOL_SOCKET, SO_REUSEPORT, &opt_value, sizeof(int)) == -1)
-		perror("setsockopt");
-
-	// Creating IPv4 (AF_INET) structure,
-	// to listen on 0.0.0.0 address (INADDR_ANY)
-	// on a certain port, on Network Bytes Order (htons(port))
-	sockaddr_in	addr;
-	addr.sin_port = htons(port);
-	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = (INADDR_ANY);
-
-	// Assinging the newly created socket to the address and port
-	if (bind(this->_socket, (sockaddr*)&addr, sizeof(addr)) == -1)
-	{
-		perror("bind");
-		close(this->_socket);
-		return ;
-	}
-
-	// Set the newly created and binded socket to listen,
-	// and set max client listening queue to maximum (SOMAXCONN)
-	if (listen(this->_socket, SOMAXCONN) == -1)
-	{
-		perror("bind");
-		close(this->_socket);
-		return ;
-	}
-
-#ifdef DEBUG
-	std::cout << "Server now listing on " << inet_ntoa(addr.sin_addr) << " port " << port << std::endl;
-#endif
-
 }
 
 Server::Server(const Server &from)
@@ -82,8 +33,12 @@ Server::Server(const Server &from)
 Server::~Server(void)
 {
 	// std::cout << GREY << "Server destructor called" << RESET << std::endl;
-	close(this->_socket);
+	std::map<int, short>::iterator it;
+	for (it = this->_instances.begin(); it != this->_instances.end(); it++)
+		close(it->first);
+
 	std::for_each(this->_clients.begin(), this->_clients.end(), close);
+
 	return;
 }
 
@@ -98,14 +53,13 @@ Server& Server::operator=(const Server &from)
 }
 
 // Getters
-short Server::getPort(void) const
+int Server::getSocketFromPort(short port)
 {
-	return (this->_port);
-}
-
-int Server::getSocketFd(void) const
-{
-	return (this->_socket);
+	std::map<int, short>::iterator it;
+	for (it = this->_instances.begin(); it != this->_instances.end(); it++)
+		if (it->second == port)
+			return (it->first);
+	return (0);
 }
 
 int Server::getClientNumber(void) const
@@ -114,29 +68,92 @@ int Server::getClientNumber(void) const
 }
 
 // Setters
-
-// Public member functions
-void Server::handleNewClients(Epoll& epoll)
+void Server::delClient(int sock)
 {
-	int client_socket = accept(this->_socket, NULL, NULL);
-
-	while (client_socket != -1)
-	{
-		this->_clients.push_back(client_socket);
-		struct sockaddr_in addr;
-		socklen_t addr_len = sizeof(addr);
-		getpeername(client_socket, (sockaddr*)&addr, &addr_len);
-		std::cout << "New client : " << inet_ntoa(addr.sin_addr) << std::endl;
-		Server::setServerNonBlocking(client_socket);
-		epoll.addFd(client_socket);
-		client_socket = accept(this->_socket, NULL, NULL);
-	}
-
-	if (client_socket == -1 && !(errno == EAGAIN || errno == EWOULDBLOCK))
-		perror("accept");
+	this->_clients.erase(std::find(this->_clients.begin(), this->_clients.end(), sock));
 }
 
-void Server::setServerNonBlocking(int sfd)
+// Checkers
+bool Server::isServSocket(int fd) const
+{
+	if (this->_instances.find(fd) != this->_instances.end())
+		return (true);
+	return (false);
+}
+
+// Public member functions
+int Server::newInstance(short port)
+{
+	// Oppening socket for IPv4 communication (AF_INET),
+	// using TCP protocol (SOCK_STREAM), and non-blocking fd (SOCK_NONBLOCK)
+	int sock = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+	if (sock == -1)
+	{
+		perror("socket");
+		return(0);
+	}
+
+	// Enabling (opt_value = 1) different options on socket,
+	// to reuse same addresss multiple time (SO_REUSEADDR), and
+	// to reuse same port multiple time (SO_REUSEPORT),
+	// to prevent port/address lock after innatended program end
+	int opt_value = 1;
+	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &opt_value, sizeof(int)) == -1)
+		perror("setsockopt");
+
+	// Creating IPv4 (AF_INET) structure,
+	// to listen on 0.0.0.0 address (INADDR_ANY)
+	// on a certain port, on Network Bytes Order (htons(port))
+	sockaddr_in	addr;
+	addr.sin_port = htons(port);
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = (INADDR_ANY);
+
+	// Assinging the newly created socket to the address and port
+	if (bind(sock, (sockaddr*)&addr, sizeof(addr)) == -1)
+	{
+		perror("bind");
+		close(sock);
+		return(0);
+	}
+
+	// Set the newly created and binded socket to listen,
+	// and set max client listening queue to maximum (SOMAXCONN)
+	if (listen(sock, SOMAXCONN) == -1)
+	{
+		perror("listen");
+		close(sock);
+		return(0);
+	}
+
+#ifdef DEBUG
+	std::cout << "Server now listing on " << inet_ntoa(addr.sin_addr) << " port " << port << std::endl;
+#endif
+
+	this->_instances.insert(std::make_pair(sock, port));
+	return(sock);
+}
+
+int Server::newClient(int sock)
+{
+	int client_sock = accept(sock, NULL, NULL);
+	if (client_sock == -1)
+		return (-1);
+
+	this->_clients.push_back(client_sock);
+	Server::setSocketNonBlocking(client_sock);
+
+#ifdef DEBUG
+		struct sockaddr_in addr;
+		socklen_t addr_len = sizeof(addr);
+		getpeername(client_sock, (sockaddr*)&addr, &addr_len);
+		std::cout << "New client : " << inet_ntoa(addr.sin_addr) << std::endl;
+#endif
+
+	return (client_sock);
+}
+
+void Server::setSocketNonBlocking(int sfd)
 {
 	int flags;
 
@@ -155,11 +172,9 @@ void Server::setServerNonBlocking(int sfd)
 }
 
 // Overloaded print operator
-std::ostream& operator<<(std::ostream& stream, const Server& instance)
+std::ostream& operator<<(std::ostream& stream, Server& instance)
 {
 	stream << "Server: ";
-	stream << "fdSocket -> " << instance.getSocketFd();
-	stream << "port -> " << instance.getSocketFd();
 	stream << "nbClients -> " << instance.getClientNumber();
 	return (stream);
 }
