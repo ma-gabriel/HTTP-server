@@ -9,6 +9,8 @@
 
 #endif
 
+#include "ARequest.hpp"
+
 // Constructors
 Epoll::Epoll(void)
 {
@@ -77,34 +79,22 @@ void Epoll::routine(Server &serv)
 	for (int i = 0; i < event_quant; i++)
 	{
 		if (!(this->_events[i].events & EPOLLIN))
-			close(this->_events[i].data.fd);
+			this->delAndCloseSocket(this->_events[i].data.fd, serv);
 		else
-			this->handleEvents(this->_events[i], serv);
+			this->handleEvents(this->_events[i].data.fd, serv);
 	}
 }
 
-void Epoll::handleEvents(epoll_event event, Server& serv)
+void Epoll::handleEvents(int sock, Server& serv)
 {
-	int sock = event.data.fd;
-
 	if (serv.isServSocket(sock) == true)
 		this->handleNewClients(sock, serv);
 	else
 	{
-		char buff[512];
-		int readed;
-
-		readed = read(sock, buff, sizeof(buff));
-		buff[readed] = '\0';
-		std::cout << buff << std::endl;
-
-		// std::string req = buff;
-		// if (req.find("STOP") != std::string::npos)
-		// 	running = false;
-
-		std::string resp = "HTTP/1.1 200 OK\r\nContent-Length: 12\r\nContent-Type: text/plain\r\n\r\nHello, World\n";
-		write(sock, resp.c_str(), resp.length());
-
+#ifdef DEBUG
+		std::cout << "Receiving new request from " << serv.getClientAddress(sock) << std::endl;
+#endif
+		ARequest::handleRequest(sock);
 		this->delAndCloseSocket(sock, serv);
 	}
 }

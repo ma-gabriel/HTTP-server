@@ -6,6 +6,7 @@
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <algorithm>
+#include <cstring>
 
 #include "Epoll.hpp"
 
@@ -39,6 +40,13 @@ Server::~Server(void)
 
 	std::for_each(this->_clients.begin(), this->_clients.end(), close);
 
+#ifdef DEBUG
+	std::map<int, char*>::iterator it2;
+	for (it2 = this->_clients_debug.begin(); it2 != this->_clients_debug.end(); it2++)
+		free(it2->second);
+#endif
+
+
 	return;
 }
 
@@ -67,10 +75,30 @@ int Server::getClientNumber(void) const
 	return (this->_clients.size());
 }
 
+#ifdef DEBUG
+char* Server::getClientAddress(int sock) const
+{
+	std::map<int, char*>::const_iterator it;
+	it = this->_clients_debug.find(sock);
+
+	if (it == this->_clients_debug.end())
+		return (NULL);
+	else
+		return(it->second);
+}
+#endif
+
 // Setters
 void Server::delClient(int sock)
 {
 	this->_clients.erase(std::find(this->_clients.begin(), this->_clients.end(), sock));
+
+#if DEBUG
+	std::map<int, char*>::iterator client_ptr = this->_clients_debug.find(sock);
+	free(client_ptr->second);
+	this->_clients_debug.erase(client_ptr);
+#endif
+
 }
 
 // Checkers
@@ -144,10 +172,13 @@ int Server::newClient(int sock)
 	Server::setSocketNonBlocking(client_sock);
 
 #ifdef DEBUG
-		struct sockaddr_in addr;
-		socklen_t addr_len = sizeof(addr);
-		getpeername(client_sock, (sockaddr*)&addr, &addr_len);
-		std::cout << "New client : " << inet_ntoa(addr.sin_addr) << std::endl;
+	struct sockaddr_in addr;
+	socklen_t addr_len = sizeof(addr);
+	getpeername(client_sock, (sockaddr*)&addr, &addr_len);
+	char client_addr[INET_ADDRSTRLEN];
+	inet_ntop(AF_INET, &addr.sin_addr, client_addr, INET_ADDRSTRLEN);
+	std::cout << "New client : " << client_addr << std::endl;
+	this->_clients_debug.insert(std::make_pair(client_sock, strdup(client_addr)));
 #endif
 
 	return (client_sock);

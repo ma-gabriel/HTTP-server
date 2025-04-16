@@ -24,6 +24,11 @@ public:
 // Getters
 	int getClientNumber(void) const;
 	int getSocketFromPort(short port);
+
+#ifdef DEBUG
+	char* getClientAddress(int sock) const;
+#endif
+
 // Setters
 	void delClient(int sock);
 // Checkers
@@ -37,6 +42,11 @@ public:
 private:
 	std::map<int, short> _instances;
 	std::deque<int> _clients;
+
+#ifdef DEBUG
+	std::map<int, char*> _clients_debug;
+#endif
+
 };
 
 std::ostream& operator<<(std::ostream& stream, const Server& instance);
