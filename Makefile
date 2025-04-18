@@ -1,6 +1,6 @@
 ### config
 NAME		= webserv
-CC			= c++
+CXX			= c++
 CFLAGS		= -std=c++98 -Wall -Werror -Wextra
 DEPFLAGS	= -MMD -MP
 AUTHOR		= elleroux
@@ -23,11 +23,11 @@ DEPS = $(patsubst $(SRCS_PATH)/%$(FILE_EXTENSION),$(OBJ_PATH)/%.d,$(SRCS))
 all: $(NAME)
 
 $(NAME): ${OBJS}
-	$(CC) $(CFLAGS) -o $@ ${OBJS}
+	$(CXX) $(CFLAGS) -o $@ ${OBJS}
 
 $(OBJ_PATH)/%.o: $(SRCS_PATH)/%$(FILE_EXTENSION) $(HEADERS) Makefile
 	mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) $(DEPFLAGS) -c $< -o $@ -I$(INCLUDE_PATH)
+	$(CXX) $(CFLAGS) $(DEPFLAGS) -c $< -o $@ -I$(INCLUDE_PATH)
 
 clean:
 	@rm -fr $(OBJ_PATH)
@@ -39,7 +39,8 @@ debug: fclean
 debug: CFLAGS += -DDEBUG -g3
 debug: all
 
-re: fclean all
+re: fclean
+	@$(MAKE) --no-print-directory all
 
 -include $(DEPS)
 .PHONY: all clean fclean re
