@@ -34,6 +34,9 @@ public:
 	void addFd(int fd) const;
 	void delAndCloseSocket(int sock, Server& serv) const;
 
+// Static Variable
+	static bool running;
+
 private:
 	int _fd;
 	struct epoll_event *_events;

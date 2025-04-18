@@ -1,6 +1,7 @@
 #include "ARequest.hpp"
 
 #include <iostream>
+#include <sstream>
 #include <unistd.h>
 #include <errno.h>
 #include <stdio.h>
@@ -64,7 +65,15 @@ void ARequest::handleRequest(int sock)
 	// if (req.find("STOP") != std::string::npos)
 	// 	running = false;
 
-	std::string resp = "HTTP/1.1 200 OK\r\nContent-Length: 12\r\nContent-Type: text/plain\r\n\r\nHello, World\n";
+	std::string start_line = "HTTP/1.1 200 OK";
+	std::string body = "<!DOCTYPE html>\n<html>\n<head>\n  <title>webserv</title>\n  <link rel=\"icon\" href=\"https://42.fr/wp-content/uploads/2021/07/cropped-42-favicon-acs-32x32.png\" sizes=\"32x32\" />\n</head>\n<body>\n\nHello, World\n\n</body>\n</html>";
+	std::string headers = "Content-Type: text/html; charset=UTF-8\n\rContent-len: ";
+	{
+		std::stringstream convert;
+		convert << body.length();
+		headers += convert.str();
+	}
+	std::string resp = start_line + "\n\r" + headers + "\n\r\n\r" + body;
 	write(sock, resp.c_str(), resp.length());
 }
 

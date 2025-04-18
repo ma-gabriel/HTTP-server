@@ -4,17 +4,18 @@
 #include <cstring>
 #include <signal.h>
 
-bool running = true;
-
 void sigint_handler(int signum)
 {
 	if (signum == SIGINT)
-		running = false;
-
+		Epoll::running = false;
 }
 
-int main(void)
+int main(int , char **) // no variable for -Werror=unused-parameter
 {
+	// remove comments + add variable names when configuration file present
+	// if (check_args(argc) == false)
+	// 	return (1);
+
 	signal(SIGINT, sigint_handler);
 	Epoll epoll;
 	Server serv;
@@ -22,6 +23,6 @@ int main(void)
 	epoll.addFd(serv.newInstance(8080));
 	epoll.addFd(serv.newInstance(8081));
 
-	while (running)
+	while (Epoll::running)
 		epoll.routine(serv);
 }

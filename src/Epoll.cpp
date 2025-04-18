@@ -11,6 +11,8 @@
 
 #include "ARequest.hpp"
 
+bool Epoll::running = true;
+
 // Constructors
 Epoll::Epoll(void)
 {
@@ -73,9 +75,11 @@ void Epoll::routine(Server &serv)
 	int event_quant;
 
 	event_quant = epoll_wait(this->_fd, this->_events, MAXEVENT, -1);
-	if (event_quant == -1)
+	if (event_quant == -1){
+		if (errno == EINTR && Epoll::running == false)
+			std::cerr << "\b\b" << std::flush; // to remove this damn ^C
 		perror("epoll_wait");
-
+	}
 	for (int i = 0; i < event_quant; i++)
 	{
 		if (!(this->_events[i].events & EPOLLIN))
@@ -127,6 +131,7 @@ void Epoll::addFd(int fd) const
 void Epoll::delAndCloseSocket(int sock, Server &serv) const
 {
 	struct epoll_event event;
+	(void) event; // -Werror=unused-but-set-variable
 
 	event.data.fd = sock;
 
