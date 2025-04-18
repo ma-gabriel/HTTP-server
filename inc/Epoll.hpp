@@ -35,7 +35,7 @@ public:
 	void delAndCloseSocket(int sock, Server& serv) const;
 
 // Static Variable
-	static bool running;
+	static bool isRunning;
 
 private:
 	int _fd;

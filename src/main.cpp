@@ -7,7 +7,7 @@
 void sigint_handler(int signum)
 {
 	if (signum == SIGINT)
-		Epoll::running = false;
+		Epoll::isRunning = false;
 }
 
 int main(int , char **) // no variable for -Werror=unused-parameter
@@ -23,6 +23,6 @@ int main(int , char **) // no variable for -Werror=unused-parameter
 	epoll.addFd(serv.newInstance(8080));
 	epoll.addFd(serv.newInstance(8081));
 
-	while (Epoll::running)
+	while (Epoll::isRunning)
 		epoll.routine(serv);
 }

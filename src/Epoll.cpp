@@ -11,7 +11,7 @@
 
 #include "ARequest.hpp"
 
-bool Epoll::running = true;
+bool Epoll::isRunning = true;
 
 // Constructors
 Epoll::Epoll(void)
@@ -76,7 +76,7 @@ void Epoll::routine(Server &serv)
 
 	event_quant = epoll_wait(this->_fd, this->_events, MAXEVENT, -1);
 	if (event_quant == -1){
-		if (errno == EINTR && Epoll::running == false)
+		if (errno == EINTR && Epoll::isRunning == false)
 			std::cerr << "\b\b" << std::flush; // to remove this damn ^C
 		perror("epoll_wait");
 	}
