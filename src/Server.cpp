@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cstring>
 
+#include "Request.hpp"
 #include "Epoll.hpp"
 
 #ifndef COLORS
@@ -182,6 +183,12 @@ int Server::newClient(int sock)
 #endif
 
 	return (client_sock);
+}
+
+void Server::newRequest(int sock)
+{
+	Request *req = new Request(sock);
+	req->handleRequest();
 }
 
 void Server::setSocketNonBlocking(int sfd)

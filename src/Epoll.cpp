@@ -9,7 +9,7 @@
 
 #endif
 
-#include "ARequest.hpp"
+#include "Request.hpp"
 
 bool Epoll::isRunning = true;
 
@@ -98,7 +98,7 @@ void Epoll::handleEvents(int sock, Server& serv)
 #ifdef DEBUG
 		std::cout << "Receiving new request from " << serv.getClientAddress(sock) << std::endl;
 #endif
-		ARequest::handleRequest(sock);
+		serv.newRequest(sock);
 		this->delAndCloseSocket(sock, serv);
 	}
 }
