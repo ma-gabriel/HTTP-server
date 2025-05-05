@@ -23,16 +23,15 @@ public:
 // Getters
 // Setters
 // Public member functions
+	void parseRequest(void);
 	void parseFirstLine(void);
 	void checkFirstLine(void);
-	void parseRequest(const std::string& request);
 	bool checkMethod(void);
-	void handleRequest(void);
-	static std::string treatRequest(std::string request);
-	// virtual void execRequest(void) = 0;
+	void extractHeaders(void);
+	std::string extractHeaderKey(std::string& line);
 	std::string extractOneLine(void);
 
-protected:
+private:
 	int			_sock;
 	std::string	_raw;
 	std::string	_method; 

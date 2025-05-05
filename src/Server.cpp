@@ -188,7 +188,7 @@ int Server::newClient(int sock)
 void Server::newRequest(int sock)
 {
 	Request *req = new Request(sock);
-	req->handleRequest();
+	req->parseRequest();
 }
 
 void Server::setSocketNonBlocking(int sfd)

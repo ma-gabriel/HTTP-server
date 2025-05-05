@@ -66,24 +66,13 @@ Request& Request::operator=(const Request &from)
 // Setters
 
 // Public member functions
-void Request::handleRequest()
+void Request::parseRequest()
 {
 	this->parseFirstLine();
 	this->checkFirstLine();
-	std::cout << "First line ok" << std::endl;
-}
 
-
-std::string Request::extractOneLine()
-{
-	std::string::size_type line_end = this->_raw.find("\r\n");
-	if (line_end == std::string::npos)
-		throw Request::BadRequestExeception();
-
-	std::string line = this->_raw.substr(0, line_end);
-	this->_raw.erase(0, line_end + 2);
-
-	return (line);
+	this->extractHeaders();
+	this->_body = this->_raw;
 }
 
 void Request::parseFirstLine()
@@ -120,3 +109,39 @@ bool Request::checkMethod()
 		return (true);
 	return (false);
 }
+
+void Request::extractHeaders()
+{
+	std::string curr_line = extractOneLine();
+	while (curr_line.empty() == false)
+	{
+		std::string key = extractHeaderKey(curr_line);
+		this->_headers[key] = curr_line;
+		curr_line = extractOneLine();
+	}
+}
+
+std::string Request::extractHeaderKey(std::string& line)
+{
+	std::string::size_type colon_pos = line.find(":");
+	if (colon_pos == std::string::npos)
+		throw Request::BadRequestExeception();
+
+	std::string key = line.substr(0, colon_pos);
+	line.erase(0, colon_pos + 2);
+
+	return (key);
+}
+
+std::string Request::extractOneLine()
+{
+	std::string::size_type line_end = this->_raw.find("\r\n");
+	if (line_end == std::string::npos)
+		throw Request::BadRequestExeception();
+
+	std::string line = this->_raw.substr(0, line_end);
+	this->_raw.erase(0, line_end + 2);
+
+	return (line);
+}
+
