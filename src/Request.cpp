@@ -90,11 +90,11 @@ void Request::parseFirstLine()
 void Request::checkFirstLine()
 {
 	if (this->checkMethod() == false)
-		throw Request::BadRequestExeception();
+		throw Request::BadRequestException("Bad HTTP method.");
 	if (this->_path.empty())
-		throw Request::BadRequestExeception();
+		throw Request::BadRequestException("No path have been provided.");
 	if (this->_version.empty() || this->_version != "HTTP/1.1")
-		throw Request::BadRequestExeception();
+		throw Request::BadRequestException("Bad HTTP version");
 }
 
 bool Request::checkMethod()
@@ -125,7 +125,7 @@ std::string Request::extractHeaderKey(std::string& line)
 {
 	std::string::size_type colon_pos = line.find(":");
 	if (colon_pos == std::string::npos)
-		throw Request::BadRequestExeception();
+		throw Request::BadRequestException("Bad header formating");
 
 	std::string key = line.substr(0, colon_pos);
 	line.erase(0, colon_pos + 2);
@@ -137,7 +137,7 @@ std::string Request::extractOneLine()
 {
 	std::string::size_type line_end = this->_raw.find("\r\n");
 	if (line_end == std::string::npos)
-		throw Request::BadRequestExeception();
+		throw Request::BadRequestException("End-of-line error");
 
 	std::string line = this->_raw.substr(0, line_end);
 	this->_raw.erase(0, line_end + 2);

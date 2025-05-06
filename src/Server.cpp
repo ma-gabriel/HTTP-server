@@ -188,7 +188,19 @@ int Server::newClient(int sock)
 void Server::newRequest(int sock)
 {
 	Request *req = new Request(sock);
-	req->parseRequest();
+
+	try {
+		req->parseRequest();
+	}
+	catch (std::exception &e) {
+		delete req;
+#ifdef DEBUG
+		std::cout << "Exception: Bad request: ";
+		std::cout << e.what() << std::endl;
+#endif
+		return;
+	}
+	delete req;
 }
 
 void Server::setSocketNonBlocking(int sfd)
