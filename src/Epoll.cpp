@@ -98,7 +98,7 @@ void Epoll::handleEvents(int sock, Server& serv)
 #ifdef DEBUG
 		std::cout << "Receiving new request from " << serv.getClientAddress(sock) << std::endl;
 #endif
-		serv.newRequest(sock);
+		serv.handleRequest(sock);
 		this->delAndCloseSocket(sock, serv);
 	}
 }
@@ -130,11 +130,6 @@ void Epoll::addFd(int fd) const
 
 void Epoll::delAndCloseSocket(int sock, Server &serv) const
 {
-	struct epoll_event event;
-	(void) event; // -Werror=unused-but-set-variable
-
-	event.data.fd = sock;
-
 	if (epoll_ctl(this->_fd, EPOLL_CTL_DEL, sock, NULL) == -1)
 	{
 		perror("epoll_ctl");

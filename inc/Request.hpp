@@ -22,6 +22,9 @@ public:
 // Overloaded operators
 	Request &operator=(const Request &from);
 // Getters
+	int getSock(void) const;
+	std::string getVersion(void) const;
+	std::string getPath(void) const;
 // Setters
 // Public member functions
 	void parseRequest(void);

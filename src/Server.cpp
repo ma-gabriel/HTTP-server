@@ -9,7 +9,7 @@
 #include <cstring>
 
 #include "Request.hpp"
-#include "Epoll.hpp"
+#include "Response.hpp"
 
 #ifndef COLORS
 
@@ -185,22 +185,29 @@ int Server::newClient(int sock)
 	return (client_sock);
 }
 
-void Server::newRequest(int sock)
+void Server::handleRequest(int sock)
 {
 	Request *req = new Request(sock);
 
 	try {
 		req->parseRequest();
 	}
-	catch (std::exception &e) {
-		delete req;
+	catch (Request::BadRequestException &e) {
+		Response::sendBadRequest(sock, e.what());
 #ifdef DEBUG
 		std::cout << "Exception: Bad request: ";
 		std::cout << e.what() << std::endl;
 #endif
+		delete req;
 		return;
 	}
+
+	Response resp(req);
+	std::string buff = resp.createResponse();
+	send(sock, buff.c_str(), buff.length(), 0);
+
 	delete req;
+	return;
 }
 
 void Server::setSocketNonBlocking(int sfd)

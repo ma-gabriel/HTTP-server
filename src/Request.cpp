@@ -62,6 +62,20 @@ Request& Request::operator=(const Request &from)
 }
 
 // Getters
+int Request::getSock(void) const
+{
+	return(this->_sock);
+}
+
+std::string Request::getVersion(void) const
+{
+	return(this->_version);
+}
+
+std::string Request::getPath(void) const
+{
+	return(this->_path);
+}
 
 // Setters
 
