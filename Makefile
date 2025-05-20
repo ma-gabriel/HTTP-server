@@ -13,14 +13,14 @@ FILE_EXTENSION	= .cpp
 SRCS_PATH		= ./src
 INCLUDE_PATH	= ./inc
 OBJ_PATH		= ./.obj
-SRCS			= main.cpp \
-				Request.cpp \
-				Reponse.cpp \
-				Server.cpp
+SRCS			= $(SRCS_PATH)/main.cpp \
+                         $(SRCS_PATH)/Request.cpp \
+                         $(SRCS_PATH)/Response.cpp \
+                         $(SRCS_PATH)/Server.cpp
 ifeq ($(OS), Darwin)
 	SRCS += Kqueue.cpp
 else
-	SRCS += Epoll.cpp
+	SRCS +=  $(SRCS_PATH)/Epoll.cpp
 endif
 HEADERS			= $(wildcard $(INCLUDE_PATH)/*.hpp)
 
