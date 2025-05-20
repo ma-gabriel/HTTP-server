@@ -16,7 +16,10 @@ OBJ_PATH		= ./.obj
 SRCS			= $(SRCS_PATH)/main.cpp \
                          $(SRCS_PATH)/Request.cpp \
                          $(SRCS_PATH)/Response.cpp \
-                         $(SRCS_PATH)/Server.cpp
+                         $(SRCS_PATH)/Server.cpp \
+                         $(SRCS_PATH)/AAtributes.cpp \
+                         $(SRCS_PATH)/AttributesParser.cpp \
+                         $(SRCS_PATH)/Location.cpp
 ifeq ($(OS), Darwin)
 	SRCS += Kqueue.cpp
 else

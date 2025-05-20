@@ -8,9 +8,9 @@
 template <typename T>
 std::string stoi(T num)
 {
-	std::ostringstream ss;
-	ss << num;
-	return ss.str();
+    std::ostringstream ss;
+    ss << num;
+    return ss.str();
 }
 
 #endif

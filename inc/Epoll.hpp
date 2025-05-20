@@ -29,7 +29,7 @@ public:
 // Setters
 // Public member functions
     void routine(Server& serv);
-    void static handleEvents(int sock, Server& serv);
+    void handleEvents(int sock, Server& serv);
     void handleNewClients(int sock, Server& serv) const;
     void addFd(int fd) const;
     void delAndCloseSocket(int sock, Server& serv) const;
