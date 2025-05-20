@@ -2,3 +2,5 @@
 .obj/
 compile_commands.json
 webserv
+.idea
+.DS_Store
