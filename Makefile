@@ -5,6 +5,7 @@ CFLAGS		= -std=c++98 -Wall -Werror -Wextra
 DEPFLAGS	= -MMD -MP
 AUTHOR		= elleroux
 DATE		= 2025/03/31 20:11:19
+OS          = $(shell uname)
 
 
 ### program files
@@ -12,7 +13,15 @@ FILE_EXTENSION	= .cpp
 SRCS_PATH		= ./src
 INCLUDE_PATH	= ./inc
 OBJ_PATH		= ./.obj
-SRCS			= $(wildcard $(SRCS_PATH)/*$(FILE_EXTENSION))
+SRCS			= main.cpp \
+				Request.cpp \
+				Reponse.cpp \
+				Server.cpp
+ifeq ($(OS), Darwin)
+	SRCS += Kqueue.cpp
+else
+	SRCS += Epoll.cpp
+endif
 HEADERS			= $(wildcard $(INCLUDE_PATH)/*.hpp)
 
 ### objects definition
