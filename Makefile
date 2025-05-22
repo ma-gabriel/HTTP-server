@@ -21,9 +21,10 @@ SRCS			= $(SRCS_PATH)/main.cpp \
                          $(SRCS_PATH)/AttributesParser.cpp \
                          $(SRCS_PATH)/Location.cpp
 ifeq ($(OS), Darwin)
-	SRCS += Kqueue.cpp
+	SRCS +=  $(SRCS_PATH)/Kqueue.cpp
 else
 	SRCS +=  $(SRCS_PATH)/Epoll.cpp
+	CFLAGS += -DLINUX
 endif
 HEADERS			= $(wildcard $(INCLUDE_PATH)/*.hpp)
 

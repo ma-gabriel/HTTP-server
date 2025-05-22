@@ -115,7 +115,20 @@ int Server::newInstance(short port)
 {
     // Oppening socket for IPv4 communication (AF_INET),
     // using TCP protocol (SOCK_STREAM), and non-blocking fd (SOCK_NONBLOCK)
-    int sock = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+    #ifdef Linux
+        int sock = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+    #else
+        int sock = socket(AF_INET, SOCK_STREAM, 0);
+        int flags = fcntl(sock, F_GETFL, 0);
+        if (flags == -1) {
+             perror("fcntl error");
+            return(0);
+        }
+        if (fcntl(sock, F_SETFL, flags | O_NONBLOCK) == -1) {
+            perror("fcntl error");
+            return(0);
+        }
+    #endif
     if (sock == -1)
     {
         perror("socket");
