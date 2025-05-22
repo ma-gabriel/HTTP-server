@@ -113,8 +113,8 @@ bool Server::isServSocket(int fd) const
 int Server::newInstance(short port)
 {
 	// Oppening socket for IPv4 communication (AF_INET),
-	// using TCP protocol (SOCK_STREAM), and non-blocking fd (SOCK_NONBLOCK)
-	int sock = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+	// using TCP protocol (SOCK_STREAM)
+	int sock = socket(AF_INET, SOCK_STREAM, 0);
 	if (sock == -1)
 	{
 		perror("socket");
@@ -166,10 +166,11 @@ int Server::newClient(int sock)
 {
 	int client_sock = accept(sock, NULL, NULL);
 	if (client_sock == -1)
+	{
+		perror("accept");
 		return (-1);
-
+	}
 	this->_clients.push_back(client_sock);
-	Server::setSocketNonBlocking(client_sock);
 
 #ifdef DEBUG
 	struct sockaddr_in addr;
@@ -182,24 +183,6 @@ int Server::newClient(int sock)
 #endif
 
 	return (client_sock);
-}
-
-void Server::setSocketNonBlocking(int sfd)
-{
-	int flags;
-
-	flags = fcntl(sfd, F_GETFL, 0);
-	if (flags == -1)
-	{
-		perror("fcntl");
-		return;
-	}
-
-	if (fcntl(sfd, F_SETFL, flags | O_NONBLOCK) == -1)
-	{
-		perror("fcntl");
-		return;
-	}
 }
 
 // Overloaded print operator
