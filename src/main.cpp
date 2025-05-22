@@ -1,13 +1,17 @@
 #include "Server.hpp"
 #include "Epoll.hpp"
 
+#include <iostream>
 #include <cstring>
 #include <signal.h>
 
 void sigint_handler(int signum)
 {
 	if (signum == SIGINT)
+	{
 		Epoll::isRunning = false;
+		std::cerr << std::endl;
+	}
 }
 
 int main(int , char **) // no variable for -Werror=unused-parameter

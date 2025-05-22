@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <stdio.h>
+#include <sys/socket.h>
 
 #ifndef COLORS
 
@@ -52,12 +53,14 @@ ARequest& ARequest::operator=(const ARequest &from)
 void ARequest::handleRequest(int sock)
 {
 	std::string request;
-	char buff[11];
+	char buff[8192];
 	int readed;
 
-	while ((readed = read(sock, buff, sizeof(buff) - 1)) != -1){
-		buff[readed] = '\0';
-		request += buff;
+	while ((readed = recv(sock, buff, sizeof(buff), MSG_DONTWAIT)) > 0)
+		request.append(buff, readed);
+	if (readed == -1 && request.length() == 0) {
+		perror("read");
+		return ;
 	}
 
 #ifdef DEBUG

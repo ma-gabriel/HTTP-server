@@ -76,8 +76,6 @@ void Epoll::routine(Server &serv)
 
 	event_quant = epoll_wait(this->_fd, this->_events, MAXEVENT, -1);
 	if (event_quant == -1){
-		if (errno == EINTR && Epoll::isRunning == false)
-			std::cerr << "\b\b" << std::flush; // to remove this damn ^C
 		perror("epoll_wait");
 	}
 	for (int i = 0; i < event_quant; i++)
@@ -107,11 +105,8 @@ void Epoll::handleNewClients(int sock, Server &serv) const
 {
 	int client_sock = serv.newClient(sock);
 
-	while (client_sock != -1)
-	{
+	if (client_sock != -1)
 		this->addFd(client_sock);
-		client_sock = serv.newClient(sock);
-	}
 }
 
 void Epoll::addFd(int fd) const

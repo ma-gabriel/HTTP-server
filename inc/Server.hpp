@@ -37,7 +37,6 @@ public:
 	int newInstance(short port);
 	int newClient(int sock);
 	void handleNewClients(Epoll& epoll, int socket);
-	static void setSocketNonBlocking(int sfd);
 
 private:
 	std::map<int, short> _instances;
