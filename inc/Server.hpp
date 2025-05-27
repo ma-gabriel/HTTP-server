@@ -36,6 +36,7 @@ public:
 // Public member functions
 	int newInstance(short port);
 	int newClient(int sock);
+	void handleRequest(int sock);
 	void handleNewClients(Epoll& epoll, int socket);
 
 private:

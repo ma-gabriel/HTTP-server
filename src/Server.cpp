@@ -8,7 +8,8 @@
 #include <algorithm>
 #include <cstring>
 
-#include "Epoll.hpp"
+#include "Request.hpp"
+#include "Response.hpp"
 
 #ifndef COLORS
 
@@ -183,6 +184,31 @@ int Server::newClient(int sock)
 #endif
 
 	return (client_sock);
+}
+
+void Server::handleRequest(int sock)
+{
+	Request *req = new Request(sock);
+
+	try {
+		req->parseRequest();
+	}
+	catch (Request::BadRequestException &e) {
+		Response::sendBadRequest(sock, e.what());
+#ifdef DEBUG
+		std::cout << "Exception: Bad request: ";
+		std::cout << e.what() << std::endl;
+#endif
+		delete req;
+		return;
+	}
+
+	Response resp(req);
+	std::string buff = resp.createResponse();
+	send(sock, buff.c_str(), buff.length(), 0);
+
+	delete req;
+	return;
 }
 
 // Overloaded print operator
