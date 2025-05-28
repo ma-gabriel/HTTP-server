@@ -8,6 +8,9 @@
 #include <unistd.h>
 #include <vector>
 #include <stdio.h>
+#include <map>
+#include <utility>
+#include <ctime>
 
 #include "Server.hpp"
 
@@ -16,13 +19,10 @@
 class Epoll
 {
 public:
-// Constructors
-	Epoll(void);
-	Epoll(const Epoll &from);
+// Instance Generator
+	static Epoll &instance();
 // Destructors
 	~Epoll(void);
-// Overloaded operators
-	Epoll &operator=(const Epoll &from);
 // Getters
 	int getFd(void) const;
 	struct epoll_event* getEventsPtr(void) const;
@@ -40,8 +40,13 @@ public:
 private:
 	int _fd;
 	struct epoll_event *_events;
+// Constructors private
+	Epoll(void);
+	Epoll(const Epoll &from);
+// Overloaded operators
+	Epoll &operator=(const Epoll &from);
 };
 
-std::ostream& operator<<(std::ostream& stream, const Epoll& instance);
+std::ostream& operator<<(std::ostream& stream, const Epoll& epoll);
 
 #endif

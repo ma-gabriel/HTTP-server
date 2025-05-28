@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <sstream>
+#include <sys/socket.h>
 
 #ifndef COLORS
 
@@ -26,7 +27,7 @@ Request::Request(int sock) : _sock(sock)
 	char buff[8192];
 	int readed;
 
-	while ((readed = read(this->_sock, buff, sizeof(buff) - 1)) != -1){
+	while ((readed = recv(this->_sock, buff, sizeof(buff) - 1, MSG_DONTWAIT)) != -1){
 		buff[readed] = '\0';
 		this->_raw += buff;
 	}
@@ -67,6 +68,11 @@ int Request::getSock(void) const
 	return(this->_sock);
 }
 
+std::string Request::getBody(void) const
+{
+	return (this->_body);
+}
+
 std::string Request::getVersion(void) const
 {
 	return(this->_version);
@@ -75,6 +81,12 @@ std::string Request::getVersion(void) const
 std::string Request::getPath(void) const
 {
 	return(this->_path);
+}
+
+
+std::map<std::string, std::string> Request::getHeaders(void) const
+{
+	return(this->_headers);
 }
 
 // Setters

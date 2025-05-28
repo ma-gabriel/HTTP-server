@@ -25,6 +25,8 @@ public:
 	int getSock(void) const;
 	std::string getVersion(void) const;
 	std::string getPath(void) const;
+	std::string getBody(void) const;
+	std::map<std::string, std::string> getHeaders(void) const;
 // Setters
 // Public member functions
 	void parseRequest(void);

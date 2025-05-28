@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cstring>
 #include <signal.h>
+#include <sys/wait.h>
 
 void sigint_handler(int signum)
 {
@@ -13,6 +14,7 @@ void sigint_handler(int signum)
 		std::cerr << std::endl;
 	}
 }
+void wait_handler(int){ wait(NULL);}
 
 int main(int , char **) // no variable for -Werror=unused-parameter
 {
@@ -20,9 +22,10 @@ int main(int , char **) // no variable for -Werror=unused-parameter
 	// if (check_args(argc) == false)
 	// 	return (1);
 
+	signal(SIGCHLD, wait_handler);
 	signal(SIGINT, sigint_handler);
-	Epoll epoll;
-	Server serv;
+	Epoll &epoll = Epoll::instance();
+	Server &serv = Server::instance();
 
 	epoll.addFd(serv.newInstance(8080));
 	epoll.addFd(serv.newInstance(8081));

@@ -7,9 +7,14 @@
 #include <fcntl.h>
 #include <algorithm>
 #include <cstring>
+#include <signal.h>
+#include <limits>
+#include <sys/wait.h>
 
 #include "Request.hpp"
 #include "Response.hpp"
+#include "Epoll.hpp"
+#include "CGI.hpp"
 
 #ifndef COLORS
 
@@ -17,6 +22,12 @@
 # define RESET "\033[0m"
 
 #endif
+
+Server &Server::instance()
+{
+	static Server instance;
+	return instance;
+}
 
 // Constructors
 Server::Server(void)
@@ -35,9 +46,21 @@ Server::Server(const Server &from)
 Server::~Server(void)
 {
 	// std::cout << GREY << "Server destructor called" << RESET << std::endl;
-	std::map<int, short>::iterator it;
-	for (it = this->_instances.begin(); it != this->_instances.end(); it++)
-		close(it->first);
+	{
+		std::map<int, short>::iterator it;
+		for (it = this->_instances.begin(); it != this->_instances.end(); it++)
+			close(it->first);
+	}
+	{
+		std::map<int, CGI::infos>::iterator it;
+		for (it = this->_CGIs.begin(); it != this->_CGIs.end(); it++) {
+			close(it->first);
+			if (it->second.pid) {
+				close(it->second.output_fd);
+				kill(it->second.pid, SIGKILL);
+			}
+		}
+	}
 
 	std::for_each(this->_clients.begin(), this->_clients.end(), close);
 
@@ -109,6 +132,85 @@ bool Server::isServSocket(int fd) const
 		return (true);
 	return (false);
 }
+
+bool Server::addCGI(int fd, CGI::infos infos, int flags)
+{
+	struct epoll_event event;
+
+	event.data.fd = fd;
+	event.events = flags;
+	if (epoll_ctl(Epoll::instance().getFd(), EPOLL_CTL_ADD, fd, &event) == -1)
+		return false;
+	_CGIs[fd] = infos;
+	return true;
+}
+
+void Server::handleCGI(epoll_event event)
+{
+	int fd = event.data.fd;
+	CGI::infos &infos = _CGIs[fd];
+	if (infos.pid == -1)
+	{
+		if (event.events & EPOLLOUT){
+			ssize_t len = write(fd, infos.body.c_str(), infos.body.length());
+			if (len == -1 || static_cast<size_t>(len) == infos.body.length()){
+				epoll_ctl(Epoll::instance().getFd(), EPOLL_CTL_DEL, fd, NULL);
+				close(fd);
+				_CGIs.erase(fd);
+				return ;
+			}
+			infos.body = infos.body.substr(len);
+		}
+		if (event.events & EPOLLHUP || event.events & EPOLLERR){
+			epoll_ctl(Epoll::instance().getFd(), EPOLL_CTL_DEL, fd, NULL);
+			close(fd);
+			_CGIs.erase(fd);
+			return ;
+		}
+	}
+	else
+	{
+		if (event.events & EPOLLIN){
+			char buffer[65537];
+			ssize_t len = read(fd, buffer, 65536);
+			write(infos.output_fd, buffer, len);
+		}
+		if (event.events & EPOLLHUP || event.events & EPOLLERR){
+			epoll_ctl(Epoll::instance().getFd(), EPOLL_CTL_DEL, fd, NULL);
+			close(fd);
+			close(infos.output_fd);
+			kill(infos.pid, SIGKILL);
+			_CGIs.erase(fd);
+		}
+	}
+}
+
+bool Server::isCGI(int fd) const
+{
+	if (this->_CGIs.find(fd) != this->_CGIs.end())
+		return (true);
+	return (false);
+}
+
+void Server::routineCGI()
+{
+	for (std::map<int, CGI::infos>::iterator it = _CGIs.begin(); it != _CGIs.end();){
+		if (it->second.timestamp + 15 < std::time(NULL)){
+			if (it->second.pid != -1) {
+				// means it's the output of the CGI
+				// TODO write from a file if error 504 and all, not from a string
+				write(it->second.output_fd, "HTTP/1.1 504 Gateway Timeout\r\nContent-Type: text/html;\r\n\r\n<!doctype html>\n<head>\n  <title>504 Gateway Timeout</title>\n</head>\n<body>\n  <h1>Gateway timeout</h1>\n  <p>The server did not respond in time. Please try again later.</p>\n</body></html>", 244);
+				close(it->second.output_fd);
+				kill(it->second.pid, SIGKILL);
+			}
+			epoll_ctl(Epoll::instance().getFd(), EPOLL_CTL_DEL, it->first, NULL);
+			close(it->first);
+			_CGIs.erase(it++);
+		}
+		else it++;
+	}
+}
+
 
 // Public member functions
 int Server::newInstance(short port)
@@ -200,21 +302,28 @@ void Server::handleRequest(int sock)
 		std::cout << e.what() << std::endl;
 #endif
 		delete req;
-		return;
+		return ;
 	}
+
+	
+	if (doCGI(*req) == true){
+		delete req;
+		return ;
+	}
+
 
 	Response resp(req);
 	std::string buff = resp.createResponse();
 	send(sock, buff.c_str(), buff.length(), 0);
 
 	delete req;
-	return;
+	return ;
 }
 
 // Overloaded print operator
-std::ostream& operator<<(std::ostream& stream, Server& instance)
+std::ostream& operator<<(std::ostream& stream, Server& server)
 {
 	stream << "Server: ";
-	stream << "nbClients -> " << instance.getClientNumber();
+	stream << "nbClients -> " << server.getClientNumber();
 	return (stream);
 }
