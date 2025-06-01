@@ -173,9 +173,11 @@ void Server::handleCGI(epoll_event event)
 		if (event.events & EPOLLIN){
 			char buffer[65537];
 			ssize_t len = read(fd, buffer, 65536);
-			write(infos.output_fd, buffer, len);
+			if (len != -1)
+				infos.body.append(buffer, len);
 		}
 		if (event.events & EPOLLHUP || event.events & EPOLLERR){
+			CGI::flush(infos.output_fd, infos.body);
 			epoll_ctl(Epoll::instance().getFd(), EPOLL_CTL_DEL, fd, NULL);
 			close(fd);
 			close(infos.output_fd);

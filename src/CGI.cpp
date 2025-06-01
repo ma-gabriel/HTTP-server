@@ -29,8 +29,8 @@ CGI::~CGI(){}
 
 
 #define ERROR_500(socket) write(socket, "HTTP/1.1 500 Internal Server Error\r\nContent-Type: text/html;\r\n\r\n<!doctype html>\n<head>\n  <title>500 Internal Server Error</title>\n</head>\n<body>\n  <h1>Internal Server Error</h1>\n  <p>a function failed due to kernel limitations</p>\n</body></html>", 246)	
-#define ERROR_404(socket) write(socket, "HTTP/1.1 404 Not Found\r\nContent-Type: text/html;\r\n\r\n<!doctype html>\n<head>\n  <title>404 Not Found</title>\n</head>\n<body>\n  <h1>Not Found</h1>\n  <p>file requested not found or not executable</p>\n</body></html>", 209)	
-			
+#define ERROR_404(socket) write(socket, "HTTP/1.1 404 Not Found\r\nContent-Type: text/html;\r\n\r\n<!doctype html>\n<head>\n  <title>404 Not Found</title>\n</head>\n<body>\n  <h1>Not Found</h1>\n  <p>file requested not found</p>\n</body></html>", 191)
+#define ERROR_403(socket) write(socket, "HTTP/1.1 403 Forbidden\r\nContent-Type: text/html;\r\n\r\n<!doctype html>\n<head>\n  <title>403 Forbidden </title>\n</head>\n<body>\n  <h1>Forbidden</h1>\n  <p>file requested not executable</p>\n</body></html>", 197)
 
 bool doCGI(const Request &req)
 {
@@ -45,15 +45,15 @@ bool doCGI(const Request &req)
 	if (bin.empty())
 		return false;
 
-	if (!CGI::checkfile(filePath)){
+	if (!CGI::checkfilepresence(bin) || !CGI::checkfilepresence(filePath)){
 		// TODO change macro to better error 404
 		ERROR_404(req.getSock());
 		return true;
 	}
 	
-	if (!CGI::checkfile(bin)){
-		// TODO change macro to better error 404
-		ERROR_404(req.getSock());
+	if (!CGI::checkfileexec(bin) || !CGI::checkfileexec(filePath)){
+		// TODO change macro to better error 403
+		ERROR_403(req.getSock());
 		return true;
 	}
 	CGI::launch(req, bin, filePath);
@@ -97,13 +97,6 @@ void CGI::launch(const Request &req, const std::string &binPath, std::string fil
 	else
 		handle.parentHandling(pid);
 }
-/*
-
-TO DO list:
-	get a way to check if the fd from epoll are CGI and not basic request
-	get a small function to just send the header "HTTP/1.1 200 OK" + few headers + the body
-	and celebrate
-*/
 
 static CGI::infos generate(std::time_t ts, pid_t pid, int fd, std::string body)
 {
@@ -139,10 +132,6 @@ void CGI::parentHandling(pid_t pid)
 		close(_socket);
 		return ;
 	}
-
-	// https://datatracker.ietf.org/doc/html/rfc3875#section-6.2.1
-	// the CGI must starts with flags from the answer, so we just need to write the first line
-	write(_socket, "HTTP/1.1 200 OK\r\n", 18);
 }
 
 void CGI::childExec(std::map<std::string,std::string> envRaw)
@@ -175,6 +164,25 @@ void CGI::childExec(std::map<std::string,std::string> envRaw)
 	std::exit(1);
 }
 
+ssize_t CGI::flush(int fd, std::string text){
+	ssize_t total = 0, len;
+	size_t status = text.find("Status: ");
+	size_t body = text.find("\r\n\r\n");
+	if (status != std::string::npos && body != std::string::npos && status < body){
+		std::string status_line = "HTTP/1.1 " + text.substr(status + 8, text.find("\r\n", status) - 8);
+		text.erase(status, text.find("\r\n", status));
+		text = status_line + text;
+	}
+	else text = "HTTP/1.1 200 OK\r\n" + text;
+	do {
+		len = send(fd, text.c_str(), text.length(), 0);
+		if (len == -1) return -1;
+		text = text.substr(len);
+		total += len;
+	}
+	while (text.length());
+	return total;
+}
 
 /**
  * remove anything from the after any ? character found 
@@ -193,12 +201,16 @@ std::string CGI::getActualPath(const std::string &path, const std::string &root)
  * @param  file the file (with path) in question
  * @return true if yes, false if not
  */
-bool CGI::checkfile(const std::string &file){
+bool CGI::checkfileexec(const std::string &file){
 	struct  stat data;
 
 	return	stat(file.c_str(), &data) == 0		// check if exists
 			&& S_ISREG(data.st_mode) != 0		// check if is a file
 			&& access(file.c_str(), X_OK) == 0;	// check if executable
+}
+
+bool CGI::checkfilepresence(const std::string &file){
+	return access(file.c_str(), F_OK) == 0;
 }
 
 std::string CGI::getQuery(const std::string &address){

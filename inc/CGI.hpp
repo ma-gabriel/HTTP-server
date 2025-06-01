@@ -38,10 +38,12 @@ class CGI
 
         static std::string getActualPath(const std::string &path, const std::string &root);
         static std::string getQuery(const std::string &address);
-        static bool checkfile(const std::string &path);
+        static bool checkfilepresence(const std::string &file);
+        static bool checkfileexec(const std::string &file);
         static std::string checkExtensions(std::map<std::string,std::string> extensions, const std::string &path);
 
         static void launch(const Request &req, const std::string &binPath, std::string filePath);
+        static ssize_t flush(int fd, std::string text);
 };
 
 bool doCGI(const Request &req);
