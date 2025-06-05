@@ -11,7 +11,7 @@
 /* ************************************************************************** */
 
 #include "Parser.hpp"
-#include "ExtendsString.hpp"
+
 #include <fstream>
 
 Parser::~Parser()
@@ -39,13 +39,52 @@ void Parser::readFile(std::ifstream &file)
 {
     std::string line;
     std::string fileContent;
-    AttributesParser attribute = AttributesParser();
     while (std::getline(file, line)) {
         size_t comment = line.find('#');
         if (comment != std::string::npos)
             line = line.substr(0, comment);
         fileContent += line + "\n";
     }
+    std::vector<std::string> allTokens = getAllToken(fileContent);
+    try {
+        createAllServeur(allTokens);
+    }
+    catch (const std::runtime_error &e) {
+        std::cerr << "Error while parsing the configuration file: " << e.what() << std::endl;
+        return;
+    }
+}
+
+std::vector<std::string> Parser::getAllToken(std::string &str)
+{
+    std::vector<std::string> tokenList;
+    size_t i = 0;
+
+    while (i < str.length()) {
+        while (i < str.length() && isSeparator(str[i]))
+            i++;
+        int start = i;
+        if (i < str.length()) {
+            while (i < str.length() && !isSeparator(str[i])) {
+                i++;
+                if (i == str.length() || str[i] == '{' || str[i] == '}' || str[i] == ';')
+                    break;
+            }
+            tokenList.push_back(str.substr(start, i - start));
+        }
+    }
+    return tokenList;
+}
+
+void Parser::createAllServeur(std::vector<std::string> &allTokens){
+    std::vector<std::string>::iterator it;
+
+    for (it = allTokens.begin(); it != allTokens.end(); ++it) {
+        if (*it == "server"){
+            ConfigurationServer server = ConfigurationServer(it, allTokens.end());
+        }
+    }
+
 }
 
 void Parser::ParseFile(std::string &fileContent)
@@ -71,19 +110,4 @@ const std::string &Parser::getConfigFile() const
 void Parser::setConfigFile(const std::string &configFile)
 {
     _configFile = configFile;
-}
-
-std::string Parser::getNextToken(std::string &str)
-{
-    std::string token;
-    size_t i = 0;
-    while (i < str.length() && str[i] == ' ')
-        i++;
-    while (i < str.length() && str[i] != ' ')
-    {
-        token += str[i];
-        i++;
-    }
-    str = str.substr(i);
-    return token;
 }

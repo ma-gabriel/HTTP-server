@@ -13,6 +13,8 @@
 
 class AAtributes
 {
+private:
+    void addRoot(std::vector<std::string>::iterator &it, const std::vector<std::string>::iterator &end);
 
 protected:
     std::string					_root;
@@ -20,9 +22,9 @@ protected:
     std::vector<EHttpMethode> 	_httpMethode;
     bool						_autoIndex;
     std::vector <std::string>	_index;
-public:
-public:
+    bool addAttributes(std::vector<std::string>::iterator &it, const std::vector<std::string>::iterator &end);
 
+public:
     AAtributes();
     AAtributes(const std::string &root, const std::map<int, std::string> &error_pages, const std::vector<EHttpMethode> &http_methode,  bool auto_index, const std::vector<std::string> &index);
     virtual ~AAtributes();

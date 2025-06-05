@@ -1,5 +1,6 @@
 #include "Request.hpp"
-}
+#include <sstream>
+
 
 // Getters
 int Request::getSock(void) const

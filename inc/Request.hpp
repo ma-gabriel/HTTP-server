@@ -28,7 +28,7 @@ public:
 // Setters
 // Public member functions
     void parseRequest(void);
-// Public exception
+// Public exceptions
     class BadRequestException : public std::exception
     {
     public:

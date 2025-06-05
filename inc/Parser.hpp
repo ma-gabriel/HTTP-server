@@ -1,25 +1,30 @@
 
 #ifndef PARSER_HPP
-#define PARSER_HPP
+# define PARSER_HPP
 
-#include <iostream>
-#include <vector>
-#include "AttributesParser.hpp"
-#include "Server.hpp"
+# include <iostream>
+# include <vector>
+# include "Server.hpp"
+# include "AAtributes.hpp"
+# include "utils.hpp"
+# include "ConfigurationServer.hpp"
 
-class Parser
+class Parser : private AAtributes
 {
 private:
     std::string _configFile;
     std::vector<Server> _config;
     void ParseFile(std::string &fileContent);
     void readFile(std::ifstream &file);
+    std::map<int, ConfigurationServer> _allServeur;
+    void    createAllServeur(std::vector<std::string> &allTokens);
+
 public:
     const std::vector<Server> &getConfig() const;
     void setConfig(const std::vector<Server> &config);
     const std::string &getConfigFile() const;
     void setConfigFile(const std::string &configFile);
-    std::string getNextToken(std::string &str);
+    std::vector<std::string> getAllToken(std::string &str);
     ~Parser();
     Parser(const std::string &config_file);
 };

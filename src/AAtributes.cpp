@@ -3,6 +3,7 @@
 //
 
 #include "AAtributes.hpp"
+#include <functional>
 
 
 AAtributes::AAtributes():_autoIndex(false)
@@ -69,4 +70,33 @@ bool AAtributes::isAutoIndex() const
     return _autoIndex;
 }
 
+bool AAtributes::addAttributes(std::vector<std::string>::iterator &it, const std::vector<std::string>::iterator &end)
+{
+    typedef void (AAtributes::*Action)(std::vector<std::string>::iterator &, const std::vector<std::string>::iterator &);
+    std::map<std::string, Action> actions;
+    actions["root"] = &AAtributes::addRoot;
+    if (it == end) {
+        std::cerr << "Error: No attributes found." << std::endl;
+        return false;
+    }
+    if (actions.find(*it) == actions.end()) {
+        return false;
+    }
+    Action itAction = actions[*it];
+    (this->*itAction)(it, end);
+    return true;
+}
+
+void AAtributes::addRoot(std::vector<std::string>::iterator &it, const std::vector<std::string>::iterator &end){
+    if (it == end) {
+        std::cerr << "Error: No root path provided." << std::endl;
+    }
+    if (++it == end || *it == "{" || *it == "}") {
+        throw std::runtime_error("Is the end of the file.");
+    }
+    this->_root = *it;
+    if (++it == end || *it != ";") {
+        throw std::runtime_error("Expected ';' after root path.");
+    }
+}
 
