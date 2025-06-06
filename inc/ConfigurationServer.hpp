@@ -23,6 +23,7 @@ private:
     std::string                      _hostName;
     struct sockaddr_in               _addr;
     std::map<std::string, Location>  _location;
+    bool addAttributes(std::vector<std::string>::iterator &it, const std::vector<std::string>::iterator &end);
 
 };
 

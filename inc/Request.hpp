@@ -68,6 +68,7 @@ enum EHttpMethode
     Put
 };
 
+std::string getMethodString(EHttpMethode method);
 
 std::ostream& operator<<(std::ostream& stream, const Request& instance);
 

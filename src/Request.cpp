@@ -99,3 +99,13 @@ std::string Request::extractOneLine()
 
     return (line);
 }
+
+std::string getMethodString(EHttpMethode method) {
+    switch (method) {
+        case Post: return "POST";
+        case Get: return "GET";
+        case Delete: return "DELETE";
+        case Put: return "PUT";
+        default: return "UNKNOWN";
+    }
+};

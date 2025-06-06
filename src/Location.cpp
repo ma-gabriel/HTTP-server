@@ -23,7 +23,7 @@ Location::Location(std::vector<std::string>::iterator &it, const std::vector<std
     }
     if (*it != "}")
         throw std::runtime_error("after location " + this->_path +" is not right brace\n");
-    std::cout << "Location created with path: " << this->_path << "and root " << _root << std::endl;
+//    std::cout << *this << std::endl;
 }
 const std::string &Location::getPath() const {
     return _path;

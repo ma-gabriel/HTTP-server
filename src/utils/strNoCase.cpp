@@ -1,7 +1,7 @@
 #include <string>
 #include <cctype>
 
-bool strcmp_nocase(const std::string& a, const std::string& b) {
+bool strcmpNocase(const std::string &a, const std::string &b) {
     std::size_t len = a.length();
     if (b.length() != len)
         return false;
