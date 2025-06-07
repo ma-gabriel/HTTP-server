@@ -5,12 +5,25 @@
 #include <iostream>
 #include "AAtributes.hpp"
 
-class Location : public AAtributes
-{
+class Location : public AAtributes {
 private:
+    std::string _path; // Path of the location
+    void correctPath();
+
 public:
-    Location();
+    const std::string &getPath() const;
+    void setPath(const std::string &path);
+    Location(std::vector<std::string>::iterator &it, const std::vector<std::string>::iterator &end);
     ~Location();
+    class DoubleSlashExceptionLocation : public std::runtime_error {
+    public:
+        DoubleSlashExceptionLocation(const std::string &path);
+    };
+
+    class StartNoWithSlashLocationException : public std::runtime_error {
+    public:
+        StartNoWithSlashLocationException(const std::string &path);
+    };
 };
 
 #endif

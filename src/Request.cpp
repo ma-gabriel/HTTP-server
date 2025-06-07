@@ -1,65 +1,6 @@
 #include "Request.hpp"
-
-#include <iostream>
-#include <sstream>
-#include <unistd.h>
-#include <errno.h>
-#include <stdio.h>
 #include <sstream>
 
-#ifndef COLORS
-
-# define GREY "\033[1;30m"
-# define RESET "\033[0m"
-
-#endif
-
-// Constructors
-Request::Request(void)
-{
-    // std::cout << GREY << "Request constructor called" << RESET << std::endl;
-    return;
-}
-
-Request::Request(int sock) : _sock(sock)
-{
-    char buff[8192];
-    int readed;
-
-    while ((readed = read(this->_sock, buff, sizeof(buff) - 1)) != -1){
-        buff[readed] = '\0';
-        this->_raw += buff;
-    }
-
-#ifdef DEBUG
-    std::cout << this->_raw << std::endl;
-#endif
-
-}
-
-Request::Request(const Request &from)
-{
-    // std::cout << GREY << "Request copy constructor called" << RESET << std::endl;
-    *this = from;
-    return;
-}
-
-// Destructors
-Request::~Request(void)
-{
-    // std::cout << GREY << "Request destructor called" << RESET << std::endl;
-    return;
-}
-
-// Overloaded operators
-Request& Request::operator=(const Request &from)
-{
-    // std::cout << GREY << "Request '=' overload called" << RESET << std::endl;
-    if (this != &from)
-    {
-    }
-    return (*this);
-}
 
 // Getters
 int Request::getSock(void) const
@@ -158,3 +99,13 @@ std::string Request::extractOneLine()
 
     return (line);
 }
+
+std::string getMethodString(EHttpMethode method) {
+    switch (method) {
+        case Post: return "POST";
+        case Get: return "GET";
+        case Delete: return "DELETE";
+        case Put: return "PUT";
+        default: return "UNKNOWN";
+    }
+};

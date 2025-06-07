@@ -28,7 +28,7 @@ public:
 // Setters
 // Public member functions
     void parseRequest(void);
-// Public exception
+// Public exceptions
     class BadRequestException : public std::exception
     {
     public:
@@ -58,7 +58,6 @@ private:
     std::string	_version;
     std::map<std::string, std::string> _headers;
     std::string	_body;
-
 };
 
 enum EHttpMethode
@@ -69,6 +68,7 @@ enum EHttpMethode
     Put
 };
 
+std::string getMethodString(EHttpMethode method);
 
 std::ostream& operator<<(std::ostream& stream, const Request& instance);
 

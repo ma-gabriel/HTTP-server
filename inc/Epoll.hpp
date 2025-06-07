@@ -2,8 +2,9 @@
 # define EPOLL_HPP
 
 # include <ostream>
-
-#include <sys/epoll.h>
+#ifdef LINUX
+# include <sys/epoll.h>
+#endif
 #include <sys/types.h>
 #include <unistd.h>
 #include <vector>

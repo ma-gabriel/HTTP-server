@@ -140,12 +140,5 @@ std::string Response::concatenateResponse(void)
     std::cout << "Response: " << std::endl;
 	std::cout << this->_raw << std::endl;
 #endif
-
     return (this->_raw);
 }
-
-// Overloaded print operator
-// std::ostream& operator<<(std::ostream& stream, const Response& instance)
-// {
-// 	return (stream);
-// }

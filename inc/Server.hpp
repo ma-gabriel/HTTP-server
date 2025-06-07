@@ -15,37 +15,35 @@ class Server
 {
 public:
 // Constructors
-    Server(void);
-    Server(const Server &from);
+	Server(void);
+	Server(const Server &from);
 // Destructors
-    ~Server(void);
+	~Server(void);
 // Overloaded operators
-    Server &operator=(const Server &from);
+	Server &operator=(const Server &from);
 // Getters
-    int getClientNumber(void) const;
-    int getSocketFromPort(short port);
+	int getClientNumber(void) const;
+	int getSocketFromPort(short port);
 
 #ifdef DEBUG
-    char* getClientAddress(int sock) const;
+	char* getClientAddress(int sock) const;
 #endif
 
 // Setters
-    void delClient(int sock);
+	void delClient(int sock);
 // Checkers
-    bool isServSocket(int fd) const;
+	bool isServSocket(int fd) const;
 // Public member functions
-    int newInstance(short port);
-    int newClient(int sock);
-    void handleRequest(int sock);
-    void handleNewClients(Epoll& epoll, int socket);
-    static void setSocketNonBlocking(int sfd);
+	int newInstance(short port);
+	int newClient(int sock);
+	void handleNewClients(Epoll& epoll, int socket);
 
 private:
-    std::map<int, short> _instances;
-    std::deque<int> _clients;
+	std::map<int, short> _instances;
+	std::deque<int> _clients;
 
 #ifdef DEBUG
-    std::map<int, char*> _clients_debug;
+	std::map<int, char*> _clients_debug;
 #endif
 
 };

@@ -1,7 +1,7 @@
 ### config
 NAME		= webserv
 CXX			= c++
-CFLAGS		= -std=c++98 -Wall -Werror -Wextra
+CFLAGS		= -std=c++98 -Wall -Werror -Wextra -g3
 DEPFLAGS	= -MMD -MP
 AUTHOR		= elleroux
 DATE		= 2025/03/31 20:11:19
@@ -13,19 +13,29 @@ FILE_EXTENSION	= .cpp
 SRCS_PATH		= ./src
 INCLUDE_PATH	= ./inc
 OBJ_PATH		= ./.obj
-SRCS			= $(SRCS_PATH)/main.cpp \
-                         $(SRCS_PATH)/Request.cpp \
-                         $(SRCS_PATH)/Response.cpp \
-                         $(SRCS_PATH)/Server.cpp \
-                         $(SRCS_PATH)/AAtributes.cpp \
-                         $(SRCS_PATH)/AttributesParser.cpp \
-                         $(SRCS_PATH)/Location.cpp
+SRCS_FILES		= main.cpp \
+                  Request.cpp \
+                  Response.cpp \
+                  Server.cpp \
+                  AAtributes.cpp \
+                  Location.cpp \
+                  Parser.cpp \
+                  ARequest.cpp \
+                  ConfigurationServer.cpp \
+                  utils/isSeparator.cpp \
+                  utils/strNoCase.cpp \
+                  utils/strIsdigit.cpp \
+                  exceptions/LocationException.cpp \
+
+
 ifeq ($(OS), Darwin)
 	SRCS +=  $(SRCS_PATH)/Kqueue.cpp
 else
 	SRCS +=  $(SRCS_PATH)/Epoll.cpp
 	CFLAGS += -DLINUX
 endif
+
+SRCS = $(addprefix $(SRCS_PATH)/, $(SRCS_FILES))
 HEADERS			= $(wildcard $(INCLUDE_PATH)/*.hpp)
 
 ### objects definition
