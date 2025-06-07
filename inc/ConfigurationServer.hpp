@@ -8,23 +8,27 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include "AAtributes.hpp"
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
 #include "Location.hpp"
 
 class ConfigurationServer : public AAtributes
 {
 public:
     ConfigurationServer(std::vector<std::string>::iterator &it, const std::vector<std::string>::iterator &end);
-    const sockaddr_in &getAddr() const;
-    void setAddr(const sockaddr_in &addr);
-    const std::string &getHostName() const;
-    void setHostName(const std::string &hostName);
+    const addrinfo *getAddr() const;
+    const std::vector<std::string> &getServerNames() const;
+    const std::map<std::string, Location> &getLocation() const;
 
 private:
-    std::string                      _hostName;
-    struct sockaddr_in               _addr;
     std::map<std::string, Location>  _location;
+    std::vector<std::string>         _serverNames;
+    struct addrinfo               *_addr;
     bool addAttributes(std::vector<std::string>::iterator &it, const std::vector<std::string>::iterator &end);
-
+    void addServerName(std::vector<std::string>::iterator &it, int n);
+    void addListen(std::vector<std::string>::iterator &it, int n);
 };
 
+std::ostream &operator<<(std::ostream &os, const ConfigurationServer &server);
 #endif
