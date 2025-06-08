@@ -1,13 +1,13 @@
 #include "Epoll.hpp"
 
 #include <iostream>
-
 #ifndef COLORS
 
 # define GREY "\033[1;30m"
 # define RESET "\033[0m"
 
 #endif
+
 
 #include "ARequest.hpp"
 
@@ -26,7 +26,13 @@ Epoll::Epoll(void)
 	}
 	this->_events = new epoll_event[MAXEVENT];
 #else
-    this->fd = kqueue();
+    this->_fd = kqueue();
+	if (this->_fd == -1)
+	{
+		perror("epoll_create");
+		return;
+	}
+	this->_events = new struct kevent[MAXEVENT];
 #endif
 }
 
@@ -43,22 +49,25 @@ Epoll::~Epoll(void)
 	// std::cout << GREY << "Epoll destructor called" << RESET << std::endl;
 	close(this->_fd);
 	delete [] this->_events;
-	return;
+
 }
 
 // Overloaded operators
 Epoll& Epoll::operator=(const Epoll &from)
 {
-    #ifdef Linux
+
 	// std::cout << GREY << "Epoll '=' overload called" << RESET << std::endl;
 	if (this == &from)
 		return (*this);
 	this->_fd = from._fd;
 	if (!this->_events)
+#ifdef Linux
 		this->_events = new epoll_event[MAXEVENT];
+#else
+		this->_events = new struct kevent[MAXEVENT];
+#endif
 	for (unsigned int i = 0; i < MAXEVENT; i++)
 		this->_events[i] = from._events[i];
-    #endif
 	return (*this);
 }
 
@@ -68,14 +77,17 @@ int Epoll::getFd(void) const
 	return (this->_fd);
 }
 
+#ifdef Linux
 epoll_event* Epoll::getEventsPtr(void) const
 {
 	return (this->_events);
 }
+#else
+struct kevent *Epoll::getKevents(void) const {
+	return this->_events;
+}
+#endif
 
-// Setters
-
-// Public member functions
 void Epoll::routine(Server &serv)
 {
     #ifdef Linux
@@ -92,7 +104,22 @@ void Epoll::routine(Server &serv)
 		else
 			this->handleEvents(this->_events[i].data.fd, serv);
 	}
-    #endif
+    #else
+	int eventKqueue;
+	eventKqueue = kevent(this->_fd, NULL, 0, this->_events, MAXEVENT, nullptr);
+	if (eventKqueue == -1){
+		perror("epoll_wait");
+	}
+	for (int i = 0; i < eventKqueue; i++)
+	{
+		if (this->_events[i].flags & EV_EOF) {
+			this->delAndCloseSocket(this->_events[i].ident, serv);
+		}
+		else {
+			this->handleEvents(this->_events[i].ident, serv);
+		}
+	}
+	#endif
 }
 
 void Epoll::handleEvents(int sock, Server& serv)
@@ -112,13 +139,13 @@ void Epoll::handleEvents(int sock, Server& serv)
 void Epoll::handleNewClients(int sock, Server &serv) const
 {
 	int client_sock = serv.newClient(sock);
-
 	if (client_sock != -1)
 		this->addFd(client_sock);
 }
 
 void Epoll::addFd(int fd) const
 {
+	#ifdef Linux
 	struct epoll_event event;
 
 	event.data.fd = fd;
@@ -129,10 +156,23 @@ void Epoll::addFd(int fd) const
 		perror("epoll_ctl");
 		return;
 	}
+	#else
+	int flags = fcntl(fd, F_GETFL, 0);
+	fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+
+	struct kevent change;
+	EV_SET(&change, fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, NULL);
+	if (kevent(this->_fd, &change, 1,  NULL, 0, nullptr) == -1) {
+		perror("kevent add client");
+		close(fd);
+		return;
+	}
+	#endif
 }
 
 void Epoll::delAndCloseSocket(int sock, Server &serv) const
 {
+	#ifdef Linux
 	struct epoll_event event;
 	(void) event; // -Werror=unused-but-set-variable
 
@@ -143,6 +183,17 @@ void Epoll::delAndCloseSocket(int sock, Server &serv) const
 		perror("epoll_ctl");
 		return;
 	}
+	#else
+	struct kevent change;
+	EV_SET(&change, sock,  EVFILT_READ, EV_DELETE, 0, 0, NULL);
+
+	if (kevent(this->_fd, &change, 1,  NULL, 0, nullptr) == -1){
+		perror("kevent add client");
+		close(sock);
+		return;
+	}
+
+	#endif
 	close(sock);
 	serv.delClient(sock);
 }

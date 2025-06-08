@@ -1,9 +1,8 @@
 #include "Server.hpp"
-#ifdef LINUX
-    #include "Epoll.hpp"
-#endif
+#include "Epoll.hpp"
 #include "webserv.hpp"
 #include <cstring>
+#include <iostream>
 #include <signal.h>
 
 void sigint_handler(int signum)
@@ -22,14 +21,11 @@ int main(int , char **) // no variable for -Werror=unused-parameter
     // 	return (1);
 
     signal(SIGINT, sigint_handler);
-    #ifdef LINUX
-        Epoll epoll;
-        Server serv;
+    Epoll epoll;
+    Server serv;
 
-        epoll.addFd(serv.newInstance(8080));
-        epoll.addFd(serv.newInstance(8081));
-
-        while (Epoll::isRunning)
-            epoll.routine(serv);
-    #endif
+    epoll.addFd(serv.newInstance(8080));
+    epoll.addFd(serv.newInstance(8081));
+    while (Epoll::isRunning)
+        epoll.routine(serv);
 }

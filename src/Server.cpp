@@ -91,8 +91,11 @@ char* Server::getClientAddress(int sock) const
 // Setters
 void Server::delClient(int sock)
 {
-	this->_clients.erase(std::find(this->_clients.begin(), this->_clients.end(), sock));
-
+	std::deque<int>::iterator it = std::find(this->_clients.begin(), this->_clients.end(), sock);
+	if (it != this->_clients.end())
+		this->_clients.erase(it);
+	else
+		std::cout << "Client not found" << std::endl;
 #if DEBUG
 	std::map<int, char*>::iterator client_ptr = this->_clients_debug.find(sock);
 	free(client_ptr->second);
