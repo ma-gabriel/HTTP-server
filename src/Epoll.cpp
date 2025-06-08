@@ -17,6 +17,7 @@ bool Epoll::isRunning = true;
 Epoll::Epoll(void)
 {
 	// std::cout << GREY << "Epoll constructor called" << RESET << std::endl;
+#ifdef Linux
 	this->_fd = epoll_create(1);
 	if (this->_fd == -1)
 	{
@@ -24,6 +25,9 @@ Epoll::Epoll(void)
 		return;
 	}
 	this->_events = new epoll_event[MAXEVENT];
+#else
+    this->fd = kqueue();
+#endif
 }
 
 Epoll::Epoll(const Epoll &from)
@@ -45,6 +49,7 @@ Epoll::~Epoll(void)
 // Overloaded operators
 Epoll& Epoll::operator=(const Epoll &from)
 {
+    #ifdef Linux
 	// std::cout << GREY << "Epoll '=' overload called" << RESET << std::endl;
 	if (this == &from)
 		return (*this);
@@ -53,6 +58,7 @@ Epoll& Epoll::operator=(const Epoll &from)
 		this->_events = new epoll_event[MAXEVENT];
 	for (unsigned int i = 0; i < MAXEVENT; i++)
 		this->_events[i] = from._events[i];
+    #endif
 	return (*this);
 }
 
@@ -72,6 +78,7 @@ epoll_event* Epoll::getEventsPtr(void) const
 // Public member functions
 void Epoll::routine(Server &serv)
 {
+    #ifdef Linux
 	int event_quant;
 
 	event_quant = epoll_wait(this->_fd, this->_events, MAXEVENT, -1);
@@ -85,6 +92,7 @@ void Epoll::routine(Server &serv)
 		else
 			this->handleEvents(this->_events[i].data.fd, serv);
 	}
+    #endif
 }
 
 void Epoll::handleEvents(int sock, Server& serv)

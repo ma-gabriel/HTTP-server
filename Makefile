@@ -26,12 +26,10 @@ SRCS_FILES		= main.cpp \
                   utils/strNoCase.cpp \
                   utils/strIsdigit.cpp \
                   exceptions/LocationException.cpp \
+                  Epoll.cpp
 
 
-ifeq ($(OS), Darwin)
-	SRCS +=  $(SRCS_PATH)/Kqueue.cpp
-else
-	SRCS +=  $(SRCS_PATH)/Epoll.cpp
+ifeq ($(OS), Linux)
 	CFLAGS += -DLINUX
 endif
 
