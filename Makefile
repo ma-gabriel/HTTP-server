@@ -20,6 +20,7 @@ SRCS_FILES		= main.cpp \
                   AAtributes.cpp \
                   Location.cpp \
                   Parser.cpp \
+                  args.cpp \
                   ARequest.cpp \
                   ConfigurationServer.cpp \
                   utils/isSeparator.cpp \

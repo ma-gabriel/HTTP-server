@@ -6,6 +6,14 @@
 #include <netdb.h>
 
 
+ConfigurationServer::ConfigurationServer():_addr(NULL) {
+
+}
+
+ConfigurationServer::~ConfigurationServer() {
+    freeaddrinfo(this->_addr);
+}
+
 ConfigurationServer::ConfigurationServer(std::vector<std::string>::iterator &begin, const std::vector<std::string>::iterator &end) {
     if (++begin == end || *begin != "{")
         throw std::runtime_error("after server is not left brace ");
@@ -81,6 +89,12 @@ const std::vector<std::string> &ConfigurationServer::getServerNames() const {
 
 const std::map<std::string, Location> &ConfigurationServer::getLocation() const {
     return _location;
+}
+
+int ConfigurationServer::getPort() const {
+    struct sockaddr_in* ipv4 = (struct sockaddr_in*)this->_addr->ai_addr;
+    uint16_t port = ntohs(ipv4->sin_port);
+    return  port;
 }
 
 std::ostream &operator<<(std::ostream &os, const ConfigurationServer &server) {

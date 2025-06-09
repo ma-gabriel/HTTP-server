@@ -13,6 +13,7 @@
 #include "Parser.hpp"
 
 #include <fstream>
+#include <unistd.h>
 
 Parser::~Parser()
 {
@@ -22,17 +23,9 @@ Parser::~Parser()
 Parser::Parser(const std::string &config_file): _configFile(config_file)
 {
     std::ifstream file(config_file.c_str());
-    try
-    {;
-        if (!file.is_open())
-            throw (std::runtime_error("Error: could not open " + config_file));
-        this->readFile(file);
-        file.close();
-    }
-    catch(const std::exception& e)
-    {
-        std::cerr << e.what() << '\n';
-    }
+    if (!file.is_open())
+        throw (std::runtime_error("Error: could not open " + config_file));
+    this->readFile(file);
 }
 
 void Parser::readFile(std::ifstream &file)
@@ -45,14 +38,9 @@ void Parser::readFile(std::ifstream &file)
             line = line.substr(0, comment);
         fileContent += line + "\n";
     }
+    file.close();
     std::vector<std::string> allTokens = getAllToken(fileContent);
-    try {
-        createAllServeur(allTokens);
-    }
-    catch (const std::runtime_error &e) {
-        std::cerr << "Error while parsing the configuration file: " << e.what() << std::endl;
-        return;
-    }
+    createAllServeur(allTokens);
 }
 
 std::vector<std::string> Parser::getAllToken(std::string &str)
@@ -82,6 +70,7 @@ void Parser::createAllServeur(std::vector<std::string> &allTokens){
     for (it = allTokens.begin(); it != allTokens.end(); ++it) {
         if (*it == "server"){
             ConfigurationServer server = ConfigurationServer(it, allTokens.end());
+            this->_allServeur[server.getPort()] = server;
         }
     }
 
@@ -90,16 +79,6 @@ void Parser::createAllServeur(std::vector<std::string> &allTokens){
 void Parser::ParseFile(std::string &fileContent)
 {
     (void)fileContent;
-}
-
-const std::vector<Server> &Parser::getConfig() const
-{
-    return _config;
-}
-
-void Parser::setConfig(const std::vector<Server> &config)
-{
-    _config = config;
 }
 
 const std::string &Parser::getConfigFile() const

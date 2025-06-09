@@ -13,15 +13,13 @@ class Parser : private AAtributes
 {
 private:
     std::string _configFile;
-    std::vector<Server> _config;
+    std::map<int, ConfigurationServer> _allServeur;
+
     void ParseFile(std::string &fileContent);
     void readFile(std::ifstream &file);
-    std::map<int, ConfigurationServer> _allServeur;
     void    createAllServeur(std::vector<std::string> &allTokens);
 
 public:
-    const std::vector<Server> &getConfig() const;
-    void setConfig(const std::vector<Server> &config);
     const std::string &getConfigFile() const;
     void setConfigFile(const std::string &configFile);
     std::vector<std::string> getAllToken(std::string &str);

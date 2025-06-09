@@ -1,9 +1,11 @@
 #include "Server.hpp"
 #include "Epoll.hpp"
-#include "webserv.hpp"
-#include <cstring>
-#include <iostream>
 #include <signal.h>
+
+#include "ConfigurationServer.hpp"
+#include "Parser.hpp"
+#include "utils.hpp"
+
 
 void sigint_handler(int signum)
 {
@@ -14,12 +16,18 @@ void sigint_handler(int signum)
     (void)signum;
 }
 
-int main(int , char **) // no variable for -Werror=unused-parameter
+int main(int argc, char **argv) // no variable for -Werror=unused-parameter
 {
     // remove comments + add variable names when configuration file present
-    // if (check_args(argc) == false)
-    // 	return (1);
-
+    if (check_args(argc) == false)
+    	return (1);
+    try {
+        Parser config = Parser(argv[1]);
+    }
+    catch (const std::exception &e) {
+        std::cerr << e.what() << std::endl;
+        return (1);
+    }
     signal(SIGINT, sigint_handler);
     Epoll epoll;
     Server serv;
