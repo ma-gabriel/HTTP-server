@@ -4,14 +4,14 @@
 
 #include "ConfigurationServer.hpp"
 #include <netdb.h>
+#include <cstdlib>
 
 
-ConfigurationServer::ConfigurationServer():_addr(NULL) {
-
+ConfigurationServer::ConfigurationServer(): AAtributes(), _port(0) {
 }
 
 ConfigurationServer::~ConfigurationServer() {
-    freeaddrinfo(this->_addr);
+
 }
 
 ConfigurationServer::ConfigurationServer(std::vector<std::string>::iterator &begin, const std::vector<std::string>::iterator &end) {
@@ -34,14 +34,13 @@ ConfigurationServer::ConfigurationServer(std::vector<std::string>::iterator &beg
     if (begin == end || *begin != "}") {
         throw std::runtime_error("after server is not right brace ");
     }
-    for (std::map<std::string, Location>::iterator it = this->_location.begin();
-         it != this->_location.end();
-         ++it)
-    {
-        std::cout << "dedebug location : " << std::endl;
-        std::cout << it->second << std::endl;
-    }
-    std::cout << *this << std::endl;
+//    for (std::map<std::string, Location>::iterator it = this->_location.begin();
+//         it != this->_location.end();
+//         ++it)
+//    {
+//        std::cout << "dedebug location : " << std::endl;
+//        std::cout << it->second << std::endl;
+//    }
 }
 
 bool ConfigurationServer::addAttributes(std::vector<std::string>::iterator &it, const std::vector<std::string>::iterator &end){
@@ -67,21 +66,22 @@ void ConfigurationServer::addServerName(std::vector<std::string>::iterator &it, 
 }
 
 void ConfigurationServer::addListen(std::vector<std::string>::iterator &it, int n) {
-    if (n != 3) {
+    if (n != 3)
         throw std::runtime_error("Server requires an address and a port.");
+    this->_host = (*(++it)).c_str();
+    if (!strIsDigit(*(++it))) {
+        throw std::runtime_error("Port must be a digit.");
     }
-    struct addrinfo hints = (struct addrinfo){};
-    hints.ai_family = AF_INET; // IPv4
-    hints.ai_socktype = SOCK_STREAM; // TCP
-    if (getaddrinfo((*(++it)).c_str(), (*(++it)).c_str(), &hints, &this->_addr) != 0) {
-        throw std::runtime_error("Invalid address or port in listen directive.");
+    double host = std::strtod((*it).c_str(), NULL);
+    int port = static_cast<int>(host);
+    if (port < 0 || port > 65535) {
+        throw std::runtime_error("Port must be between 0 and 65535.");
     }
+    this->_port = port;
+    this->_portString = it->c_str();
 }
 
 
-const addrinfo *ConfigurationServer::getAddr() const {
-    return _addr;
-}
 
 const std::vector<std::string> &ConfigurationServer::getServerNames() const {
     return _serverNames;
@@ -91,10 +91,36 @@ const std::map<std::string, Location> &ConfigurationServer::getLocation() const 
     return _location;
 }
 
+const char  *ConfigurationServer::getPortString() const {
+    return  this->_portString;
+}
+
+
+
+ConfigurationServer &ConfigurationServer::operator=(const ConfigurationServer &from){
+
+    // std::cout << GREY << "Epoll '=' overload called" << RESET << std::endl;
+    if (this == &from)
+        return (*this);
+    this->_host = from._host;
+    this->_port = from._port;
+    this->_serverNames = from._serverNames;
+    return (*this);
+}
+
+ConfigurationServer::ConfigurationServer(const ConfigurationServer &from)
+{
+    // std::cout << GREY << "Epoll copy constructor called" << RESET << std::endl;
+    *this = from;
+    return;
+}
+
 int ConfigurationServer::getPort() const {
-    struct sockaddr_in* ipv4 = (struct sockaddr_in*)this->_addr->ai_addr;
-    uint16_t port = ntohs(ipv4->sin_port);
-    return  port;
+    return _port;
+}
+
+const char *ConfigurationServer::getHost() const {
+    return _host;
 }
 
 std::ostream &operator<<(std::ostream &os, const ConfigurationServer &server) {

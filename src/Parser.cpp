@@ -66,14 +66,13 @@ std::vector<std::string> Parser::getAllToken(std::string &str)
 
 void Parser::createAllServeur(std::vector<std::string> &allTokens){
     std::vector<std::string>::iterator it;
-
     for (it = allTokens.begin(); it != allTokens.end(); ++it) {
         if (*it == "server"){
-            ConfigurationServer server = ConfigurationServer(it, allTokens.end());
+            ConfigurationServer server(it, allTokens.end());
             this->_allServeur[server.getPort()] = server;
         }
+        std::cout << "Number of servers created: " << this->_allServeur.size() << std::endl;
     }
-
 }
 
 void Parser::ParseFile(std::string &fileContent)
@@ -89,4 +88,8 @@ const std::string &Parser::getConfigFile() const
 void Parser::setConfigFile(const std::string &configFile)
 {
     _configFile = configFile;
+}
+
+const std::map<int, ConfigurationServer> &Parser::getAllServeur() const {
+    return _allServeur;
 }

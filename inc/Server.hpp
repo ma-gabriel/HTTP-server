@@ -8,6 +8,7 @@
 # include <errno.h>
 # include <deque>
 # include <map>
+#include "ConfigurationServer.hpp"
 
 class Epoll;
 
@@ -34,12 +35,12 @@ public:
 // Checkers
 	bool isServSocket(int fd) const;
 // Public member functions
-	int newInstance(short port);
+    int newInstance(ConfigurationServer server);
 	int newClient(int sock);
 	void handleNewClients(Epoll& epoll, int socket);
 
 private:
-	std::map<int, short> _instances;
+	std::map<int, ConfigurationServer> _instances;
 	std::deque<int> _clients;
 
 #ifdef DEBUG

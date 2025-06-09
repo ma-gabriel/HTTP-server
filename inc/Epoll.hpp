@@ -30,7 +30,7 @@ public:
     Epoll &operator=(const Epoll &from);
 // Getters
     int getFd(void) const;
-#ifdef Linux
+#ifdef LINUX
     struct epoll_event* getEventsPtr(void) const;
 #else
     struct kevent *getKevents(void) const;

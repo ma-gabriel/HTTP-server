@@ -34,19 +34,15 @@ Server::Server(const Server &from)
 Server::~Server(void)
 {
 	// std::cout << GREY << "Server destructor called" << RESET << std::endl;
-	std::map<int, short>::iterator it;
+	std::map<int, ConfigurationServer>::iterator it;
 	for (it = this->_instances.begin(); it != this->_instances.end(); it++)
 		close(it->first);
-
 	std::for_each(this->_clients.begin(), this->_clients.end(), close);
-
 #ifdef DEBUG
 	std::map<int, char*>::iterator it2;
 	for (it2 = this->_clients_debug.begin(); it2 != this->_clients_debug.end(); it2++)
 		free(it2->second);
 #endif
-
-
 	return;
 }
 
@@ -63,9 +59,9 @@ Server& Server::operator=(const Server &from)
 // Getters
 int Server::getSocketFromPort(short port)
 {
-	std::map<int, short>::iterator it;
+	std::map<int, ConfigurationServer>::iterator it;
 	for (it = this->_instances.begin(); it != this->_instances.end(); it++)
-		if (it->second == port)
+		if (it->second.getPort() == port)
 			return (it->first);
 	return (0);
 }
@@ -113,10 +109,12 @@ bool Server::isServSocket(int fd) const
 }
 
 // Public member functions
-int Server::newInstance(short port)
+int Server::newInstance(ConfigurationServer server)
 {
 	// Oppening socket for IPv4 communication (AF_INET),
 	// using TCP protocol (SOCK_STREAM)
+    struct addrinfo hints, *res;
+    std::memset(&hints, 0, sizeof(hints));
 	int sock = socket(AF_INET, SOCK_STREAM, 0);
 	if (sock == -1)
 	{
@@ -135,19 +133,19 @@ int Server::newInstance(short port)
 	// Creating IPv4 (AF_INET) structure,
 	// to listen on 0.0.0.0 address (INADDR_ANY)
 	// on a certain port, on Network Bytes Order (htons(port))
-	sockaddr_in	addr;
-	addr.sin_port = htons(port);
-	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = (INADDR_ANY);
-
 	// Assinging the newly created socket to the address and port
-	if (bind(sock, (sockaddr*)&addr, sizeof(addr)) == -1)
+    if (getaddrinfo(server.getHost(), server.getPortString(), &hints, &res) != 0){
+        perror("getaddrinfo");
+        close(sock);
+        return(0);
+    }
+
+	if (bind(sock, res->ai_addr, res->ai_addrlen) == -1)
 	{
 		perror("bind");
 		close(sock);
 		return(0);
 	}
-
 	// Set the newly created and binded socket to listen,
 	// and set max client listening queue to maximum (SOMAXCONN)
 	if (listen(sock, SOMAXCONN) == -1)
@@ -161,7 +159,7 @@ int Server::newInstance(short port)
 	std::cout << "Server now listing on " << inet_ntoa(addr.sin_addr) << " port " << port << std::endl;
 #endif
 
-	this->_instances.insert(std::make_pair(sock, port));
+	this->_instances.insert(std::make_pair(sock, server));
 	return(sock);
 }
 

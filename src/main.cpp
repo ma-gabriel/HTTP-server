@@ -9,10 +9,7 @@
 
 void sigint_handler(int signum)
 {
-    #ifdef LINUX
-    if (signum == SIGINT)
-        Epoll::isRunning = false;
-    #endif
+    Epoll::isRunning = false;
     (void)signum;
 }
 
@@ -23,17 +20,20 @@ int main(int argc, char **argv) // no variable for -Werror=unused-parameter
     	return (1);
     try {
         Parser config = Parser(argv[1]);
+        signal(SIGINT, sigint_handler);
+        Epoll epoll;
+        Server serv;
+        for (std::map<int, ConfigurationServer>::const_iterator it = config.getAllServeur().begin();
+             it != config.getAllServeur().end(); ++it) {
+            epoll.addFd(serv.newInstance(it->second));
+        }
+        while (Epoll::isRunning)
+            epoll.routine(serv);
     }
     catch (const std::exception &e) {
         std::cerr << e.what() << std::endl;
         return (1);
     }
-    signal(SIGINT, sigint_handler);
-    Epoll epoll;
-    Server serv;
 
-    epoll.addFd(serv.newInstance(8080));
-    epoll.addFd(serv.newInstance(8081));
-    while (Epoll::isRunning)
-        epoll.routine(serv);
+    return (0);
 }

@@ -16,7 +16,12 @@ private:
     std::map<int, ConfigurationServer> _allServeur;
 
     void ParseFile(std::string &fileContent);
-    void readFile(std::ifstream &file);
+
+public:
+    const std::map<int, ConfigurationServer> &getAllServeur() const;
+
+private:
+    void    readFile(std::ifstream &file);
     void    createAllServeur(std::vector<std::string> &allTokens);
 
 public:

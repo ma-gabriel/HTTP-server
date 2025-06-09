@@ -12,18 +12,27 @@
 class ConfigurationServer : public AAtributes
 {
 public:
+    int getPort() const;
+
+public:
     ConfigurationServer();
     ~ConfigurationServer();
+    ConfigurationServer(const ConfigurationServer &from);
     ConfigurationServer(std::vector<std::string>::iterator &it, const std::vector<std::string>::iterator &end);
     const addrinfo *getAddr() const;
     const std::vector<std::string> &getServerNames() const;
     const std::map<std::string, Location> &getLocation() const;
-    int getPort() const;
+    ConfigurationServer &operator=(const ConfigurationServer &from);
+    const char *getPortString() const;
+
+    const char *getHost() const;
 
 private:
     std::map<std::string, Location>  _location;
     std::vector<std::string>         _serverNames;
-    struct addrinfo                  *_addr;
+    const char                       *_portString;
+    const char                       *_host;
+    int                              _port;
     bool addAttributes(std::vector<std::string>::iterator &it, const std::vector<std::string>::iterator &end);
     void addServerName(std::vector<std::string>::iterator &it, int n);
     void addListen(std::vector<std::string>::iterator &it, int n);

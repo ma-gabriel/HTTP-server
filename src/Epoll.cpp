@@ -17,7 +17,7 @@ bool Epoll::isRunning = true;
 Epoll::Epoll(void)
 {
 	// std::cout << GREY << "Epoll constructor called" << RESET << std::endl;
-#ifdef Linux
+#ifdef LINUX
 	this->_fd = epoll_create(1);
 	if (this->_fd == -1)
 	{
@@ -61,7 +61,7 @@ Epoll& Epoll::operator=(const Epoll &from)
 		return (*this);
 	this->_fd = from._fd;
 	if (!this->_events)
-#ifdef Linux
+#ifdef LINUX
 		this->_events = new epoll_event[MAXEVENT];
 #else
 		this->_events = new struct kevent[MAXEVENT];
@@ -77,7 +77,7 @@ int Epoll::getFd(void) const
 	return (this->_fd);
 }
 
-#ifdef Linux
+#ifdef LINUX
 epoll_event* Epoll::getEventsPtr(void) const
 {
 	return (this->_events);
@@ -90,7 +90,7 @@ struct kevent *Epoll::getKevents(void) const {
 
 void Epoll::routine(Server &serv)
 {
-    #ifdef Linux
+    #ifdef LINUX
 	int event_quant;
 
 	event_quant = epoll_wait(this->_fd, this->_events, MAXEVENT, -1);
@@ -131,8 +131,8 @@ void Epoll::handleEvents(int sock, Server& serv)
 #ifdef DEBUG
 		std::cout << "Receiving new request from " << serv.getClientAddress(sock) << std::endl;
 #endif
-		ARequest::handleRequest(sock);
-		this->delAndCloseSocket(sock, serv);
+        ARequest::handleRequest(sock);
+        this->delAndCloseSocket(sock, serv);
 	}
 }
 
@@ -145,7 +145,7 @@ void Epoll::handleNewClients(int sock, Server &serv) const
 
 void Epoll::addFd(int fd) const
 {
-	#ifdef Linux
+	#ifdef LINUX
 	struct epoll_event event;
 
 	event.data.fd = fd;
@@ -172,7 +172,7 @@ void Epoll::addFd(int fd) const
 
 void Epoll::delAndCloseSocket(int sock, Server &serv) const
 {
-	#ifdef Linux
+	#ifdef LINUX
 	struct epoll_event event;
 	(void) event; // -Werror=unused-but-set-variable
 
