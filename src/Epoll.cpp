@@ -13,6 +13,12 @@
 
 bool Epoll::isRunning = true;
 
+Epoll &Epoll::instance()
+{
+	static Epoll instance;
+	return instance;
+}
+
 // Constructors
 Epoll::Epoll(void)
 {
@@ -29,7 +35,7 @@ Epoll::Epoll(void)
     this->_fd = kqueue();
 	if (this->_fd == -1)
 	{
-		perror("epoll_create");
+		perror("kqueue_create");
 		return;
 	}
 	this->_events = new struct kevent[MAXEVENT];
@@ -93,13 +99,16 @@ void Epoll::routine(Server &serv)
     #ifdef LINUX
 	int event_quant;
 
-	event_quant = epoll_wait(this->_fd, this->_events, MAXEVENT, -1);
-	if (event_quant == -1){
-		perror("epoll_wait");
+	event_quant = epoll_wait(this->_fd, this->_events, MAXEVENT, 1000);
+	// once a sec, checks that CGI don't timeout (err 504)
+	if (event_quant == -1 && errno != EINTR){	// won't write when close by ^C,
+		perror("epoll_wait"); 					// due to same errno value than timeout
 	}
 	for (int i = 0; i < event_quant; i++)
 	{
-		if (!(this->_events[i].events & EPOLLIN))
+		if (serv.isCGI(this->_events[i].data.fd) == true)
+			serv.handleCGI(this->_events[i]);
+		else if (!(this->_events[i].events & EPOLLIN))
 			this->delAndCloseSocket(this->_events[i].data.fd, serv);
 		else
 			this->handleEvents(this->_events[i].data.fd, serv);
@@ -112,6 +121,8 @@ void Epoll::routine(Server &serv)
 	}
 	for (int i = 0; i < eventKqueue; i++)
 	{
+		// if (serv.isCGI(this->_events[i].ident) == true)
+		// 	serv.handleCGI(this->_events[i]);
 		if (this->_events[i].flags & EV_EOF) {
 			this->delAndCloseSocket(this->_events[i].ident, serv);
 		}
@@ -120,6 +131,7 @@ void Epoll::routine(Server &serv)
 		}
 	}
 	#endif
+	// serv.routineCGI();
 }
 
 void Epoll::handleEvents(int sock, Server& serv)
@@ -131,10 +143,11 @@ void Epoll::handleEvents(int sock, Server& serv)
 #ifdef DEBUG
 		std::cout << "Receiving new request from " << serv.getClientAddress(sock) << std::endl;
 #endif
-        ARequest::handleRequest(sock);
-        this->delAndCloseSocket(sock, serv);
+		serv.handleRequest(sock);
+		this->delAndCloseSocket(sock, serv);
 	}
 }
+
 
 void Epoll::handleNewClients(int sock, Server &serv) const
 {
@@ -199,8 +212,8 @@ void Epoll::delAndCloseSocket(int sock, Server &serv) const
 }
 
 // Overloaded print operator
-std::ostream& operator<<(std::ostream& stream, const Epoll& instance)
+std::ostream& operator<<(std::ostream& stream, const Epoll& epoll)
 {
-	std::cout << instance.getFd();
+	std::cout << epoll.getFd();
 	return (stream);
 }

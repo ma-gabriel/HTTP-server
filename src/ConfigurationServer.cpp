@@ -7,14 +7,14 @@
 #include <cstdlib>
 
 
-ConfigurationServer::ConfigurationServer(): AAtributes(), _port(0) {
+ConfigurationServer::ConfigurationServer(): AAtributes(), _portString(nullptr), _host(nullptr), _port(0) {
 }
 
 ConfigurationServer::~ConfigurationServer() {
 
 }
 
-ConfigurationServer::ConfigurationServer(std::vector<std::string>::iterator &begin, const std::vector<std::string>::iterator &end) {
+ConfigurationServer::ConfigurationServer(std::vector<std::string>::iterator &begin, const std::vector<std::string>::iterator &end): AAtributes(), _portString(nullptr), _host(nullptr), _port(0){
     if (++begin == end || *begin != "{")
         throw std::runtime_error("after server is not left brace ");
     while (++begin != end && *begin != "}") {
@@ -34,13 +34,13 @@ ConfigurationServer::ConfigurationServer(std::vector<std::string>::iterator &beg
     if (begin == end || *begin != "}") {
         throw std::runtime_error("after server is not right brace ");
     }
-//    for (std::map<std::string, Location>::iterator it = this->_location.begin();
-//         it != this->_location.end();
-//         ++it)
-//    {
-//        std::cout << "dedebug location : " << std::endl;
-//        std::cout << it->second << std::endl;
-//    }
+    // for (std::map<std::string, Location>::iterator it = this->_location.begin();
+    //      it != this->_location.end();
+    //      ++it)
+    // {
+    //     std::cout << "dedebug location : " << std::endl;
+    //     std::cout << it->second << std::endl;
+    // }
 }
 
 bool ConfigurationServer::addAttributes(std::vector<std::string>::iterator &it, const std::vector<std::string>::iterator &end){
@@ -104,15 +104,18 @@ ConfigurationServer &ConfigurationServer::operator=(const ConfigurationServer &f
         return (*this);
     this->_host = from._host;
     this->_port = from._port;
+    this->_portString = from._portString;
     this->_serverNames = from._serverNames;
     return (*this);
 }
 
 ConfigurationServer::ConfigurationServer(const ConfigurationServer &from)
 {
-    // std::cout << GREY << "Epoll copy constructor called" << RESET << std::endl;
-    *this = from;
-    return;
+    this->_host = from._host;
+    this->_port = from._port;
+    this->_serverNames = from._serverNames;
+    this->_location = from._location;
+    this->_portString = from._portString;
 }
 
 int ConfigurationServer::getPort() const {

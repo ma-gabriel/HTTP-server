@@ -29,12 +29,6 @@ protected:
     std::vector<EHttpMethode> 	_httpMethode;
     bool						_autoIndex;
     std::vector <std::string>	_index;
-
-public:
-    const std::vector<std::string> &getCgi() const;
-    int getMaxBodySize() const;
-
-protected:
     std::vector <std::string>	_cgi;
     int                         _maxBodySize;
     virtual bool addAttributes(std::vector<std::string>::iterator &it, const std::vector<std::string>::iterator &end);
@@ -54,6 +48,8 @@ public:
     void setErrorPages(const std::map<int, std::string> &errorPages);
     void setIndex(const std::vector<std::string> &index);
     void setAutoIndex(bool autoIndex);
+    const std::vector<std::string> &getCgi() const;
+    int getMaxBodySize() const;
 };
 
 std::ostream &operator<<(std::ostream &os, const AAtributes &attributes);

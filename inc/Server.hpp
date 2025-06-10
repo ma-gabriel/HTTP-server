@@ -8,21 +8,20 @@
 # include <errno.h>
 # include <deque>
 # include <map>
-#include "ConfigurationServer.hpp"
+# include <ctime>
+# include "CGI.hpp"
 
+class ConfigurationServer;
 class Epoll;
 
 class Server
 {
 public:
-// Constructors
-	Server(void);
-	Server(const Server &from);
-// Destructors
+	// Instance Generator
+	static Server &instance();
+	// Destructors
 	~Server(void);
-// Overloaded operators
-	Server &operator=(const Server &from);
-// Getters
+	// Getters
 	int getClientNumber(void) const;
 	int getSocketFromPort(short port);
 
@@ -30,16 +29,34 @@ public:
 	char* getClientAddress(int sock) const;
 #endif
 
-// Setters
+	// Setters
 	void delClient(int sock);
-// Checkers
+	// Checkers
 	bool isServSocket(int fd) const;
-// Public member functions
-    int newInstance(ConfigurationServer server);
+	// Public member functions
+	int newInstance(ConfigurationServer server);
 	int newClient(int sock);
+	void handleRequest(int sock);
+#ifdef LINUX
 	void handleNewClients(Epoll& epoll, int socket);
 
+	// CGI handlers
+	void handleCGI(epoll_event event);
+
+	bool isCGI(int fd) const;
+	bool addCGI(int fd, CGI::infos infos, int flags);
+	void routineCGI();
+#endif
 private:
+	// Constructors
+	Server(void);
+	Server(const Server &from);
+	// Overloaded operators
+	Server &operator=(const Server &from);
+	// data members
+#ifdef LINUX
+	std::map<int, CGI::infos> _CGIs;
+#endif
 	std::map<int, ConfigurationServer> _instances;
 	std::deque<int> _clients;
 

@@ -3,6 +3,4 @@
 compile_commands.json
 webserv
 .idea
-cmake-build-debug
 .DS_Store
-CMakeLists.txt

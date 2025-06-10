@@ -13,6 +13,9 @@
 #include <unistd.h>
 #include <vector>
 #include <stdio.h>
+#include <map>
+#include <utility>
+#include <ctime>
 
 #include "Server.hpp"
 
@@ -21,13 +24,10 @@
 class Epoll
 {
 public:
-// Constructors
-    Epoll(void);
-    Epoll(const Epoll &from);
 // Destructors
     ~Epoll(void);
-// Overloaded operators
-    Epoll &operator=(const Epoll &from);
+// Instance Generator
+	static Epoll &instance();
 // Getters
     int getFd(void) const;
 #ifdef LINUX
@@ -35,7 +35,6 @@ public:
 #else
     struct kevent *getKevents(void) const;
 #endif
-// Setters
 // Public member functions
     void routine(Server& serv);
     void handleEvents(int sock, Server& serv);
@@ -53,9 +52,13 @@ private:
 #else
     struct kevent *_events;
 #endif
-
+// Constructors private
+	Epoll(void);
+	Epoll(const Epoll &from);
+// Overloaded operators
+	Epoll &operator=(const Epoll &from);
 };
 
-std::ostream& operator<<(std::ostream& stream, const Epoll& instance);
+std::ostream& operator<<(std::ostream& stream, const Epoll& epoll);
 
 #endif
