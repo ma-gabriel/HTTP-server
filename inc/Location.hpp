@@ -3,9 +3,9 @@
 #define LOCATION_HPP
 
 #include <iostream>
-#include "AAtributes.hpp"
+#include "Atributes.hpp"
 
-class Location : public AAtributes {
+class Location : public Atributes {
 private:
     std::string _path; // Path of the location
     void correctPath();

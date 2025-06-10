@@ -17,7 +17,7 @@ SRCS_FILES		= main.cpp \
                   Request.cpp \
                   Response.cpp \
                   Server.cpp \
-                  AAtributes.cpp \
+                  Atributes.cpp \
                   Location.cpp \
                   Parser.cpp \
                   args.cpp \

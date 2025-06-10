@@ -5,11 +5,11 @@
 #ifndef CONFIGURATIONSERVER_HPP
 # define CONFIGURATIONSERVER_HPP
 
-#include "AAtributes.hpp"
+#include "Atributes.hpp"
 #include <netdb.h>
 #include "Location.hpp"
 
-class ConfigurationServer : public AAtributes
+class ConfigurationServer : public Atributes
 {
 public:
     int getPort() const;

@@ -7,14 +7,14 @@
 #include <cstdlib>
 
 
-ConfigurationServer::ConfigurationServer(): AAtributes(), _portString(NULL), _host(NULL), _port(0) {
+ConfigurationServer::ConfigurationServer(): Atributes(), _portString(NULL), _host(NULL), _port(0) {
 }
 
 ConfigurationServer::~ConfigurationServer() {
 
 }
 
-ConfigurationServer::ConfigurationServer(std::vector<std::string>::iterator &begin, const std::vector<std::string>::iterator &end): AAtributes(), _portString(NULL), _host(NULL), _port(0){
+ConfigurationServer::ConfigurationServer(std::vector<std::string>::iterator &begin, const std::vector<std::string>::iterator &end): Atributes(), _portString(NULL), _host(NULL), _port(0){
     if (++begin == end || *begin != "{")
         throw std::runtime_error("after server is not left brace ");
     while (++begin != end && *begin != "}") {
@@ -44,7 +44,7 @@ ConfigurationServer::ConfigurationServer(std::vector<std::string>::iterator &beg
 }
 
 bool ConfigurationServer::addAttributes(std::vector<std::string>::iterator &it, const std::vector<std::string>::iterator &end){
-    if (AAtributes::addAttributes(it, end))
+    if (Atributes::addAttributes(it, end))
         return true;
     int n = this->getSizeLine(it, end);
     if (strcmpNocase(*it, "listen"))
@@ -110,7 +110,7 @@ ConfigurationServer &ConfigurationServer::operator=(const ConfigurationServer &f
 }
 
 ConfigurationServer::ConfigurationServer(const ConfigurationServer &from):
-AAtributes(from)
+Atributes(from)
 {
     this->_host = from._host;
     this->_port = from._port;

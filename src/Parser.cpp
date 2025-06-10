@@ -20,15 +20,17 @@ Parser::~Parser()
 
 }
 
-Parser::ParserFile(const std::string &config_file)
+std::map<int, ConfigurationServer> Parser::ParseFile(const std::string &config_file)
 {
     std::ifstream file(config_file.c_str());
     if (!file.is_open())
         throw (std::runtime_error("Error: could not open " + config_file));
-    this->readFile(file);
+    std::string fileContent = this->readFile(file);
+    std::vector<std::string> allTokens = getAllToken(fileContent);
+    return createAllServeur(allTokens);
 }
 
-void Parser::readFile(std::ifstream &file)
+std::string Parser::readFile(std::ifstream &file)
 {
     std::string line;
     std::string fileContent;
@@ -39,8 +41,8 @@ void Parser::readFile(std::ifstream &file)
         fileContent += line + "\n";
     }
     file.close();
-    std::vector<std::string> allTokens = getAllToken(fileContent);
-    createAllServeur(allTokens);
+    return fileContent;
+
 }
 
 std::vector<std::string> Parser::getAllToken(std::string &str)
@@ -64,20 +66,28 @@ std::vector<std::string> Parser::getAllToken(std::string &str)
     return tokenList;
 }
 
-void Parser::createAllServeur(std::vector<std::string> &allTokens){
+std::map<int, ConfigurationServer> Parser::createAllServeur(std::vector<std::string> &allTokens){
     std::vector<std::string>::iterator it;
     std::vector<std::string>::iterator end = allTokens.end();
+    Atributes atributes;
+    std::map <int, ConfigurationServer> config;
     for (it = allTokens.begin(); it != end; ++it) {
         if (*it == "server"){
             ConfigurationServer server(it, allTokens.end());
-            this->_allServeur[server.getPort()] = server;
+            config[server.getPort()] = server;
         }
         else
-            this->addAttributes(it, end);
-        std::cout << "Number of servers created: " << this->_allServeur.size() << std::endl;
+            atributes.addAttributes(it, end);
+        std::cout << "Number of servers created: " << config.size() << std::endl;
     }
+    return config;
 }
 
 Parser::Parser() {
+    std::cout << "Parser created" << std::endl;
+}
 
+Parser &Parser::instance() {
+    static Parser instance;
+    return instance;
 }

@@ -5,23 +5,22 @@
 # include <iostream>
 # include <vector>
 # include "Server.hpp"
-# include "AAtributes.hpp"
+# include "Atributes.hpp"
 # include "ConfigurationServer.hpp"
 
-class Parser : public AAtributes
+class Parser
 {
 
 private:
-    void    readFile(std::ifstream &file);
-    void    createAllServeur(std::vector<std::string> &allTokens);
+    std::string readFile(std::ifstream &file);
+
+    std::map<int, ConfigurationServer> createAllServeur(std::vector<std::string> &allTokens);
     Parser();
 
 public:
-    std::map<int, ConfigurationServer> ParseFile(std::string &fileContent);
-    const std::map<int, ConfigurationServer> &getAllServeur() const;
-    const std::string &getConfigFile() const;
-    void setConfigFile(const std::string &configFile);
+    std::map<int, ConfigurationServer> ParseFile(const std::string &fileContent);
     std::vector<std::string> getAllToken(std::string &str);
+    static Parser &instance();
     ~Parser();
 };
 
