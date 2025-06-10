@@ -124,9 +124,9 @@ void CGI::parentHandling(pid_t pid)
 		return ;
 	}
 	//if this one fails (like kernel error) the CGI won't have a body, at worst, time-out
-	Server::instance().addCGI(_toCGI[1], generate(std::time(NULL), -1, -1, _body),  EPOLLOUT | EPOLLHUP | EPOLLERR);
+	Server::instance().addCGI(_toCGI[1], generate(std::time(NULL), -1, -1, _body),  false);
 	//TODO change macro to error 500
-	if (!Server::instance().addCGI(_fromCGI[0], generate(std::time(NULL), pid, _socket, ""), EPOLLIN | EPOLLHUP | EPOLLERR)){
+	if (!Server::instance().addCGI(_fromCGI[0], generate(std::time(NULL), pid, _socket, ""), true)){
 		kill(pid, SIGKILL);
 		ERROR_500(_socket);
 		close(_socket);

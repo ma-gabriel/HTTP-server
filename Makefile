@@ -31,7 +31,7 @@ SRCS_FILES		= main.cpp \
 
 ifeq ($(OS), Linux)
 	CFLAGS += -DLINUX
-	SRCS += CGI.cpp
+	SRCS_FILES += CGI.cpp
 endif
 
 SRCS = $(addprefix $(SRCS_PATH)/, $(SRCS_FILES))

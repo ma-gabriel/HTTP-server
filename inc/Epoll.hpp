@@ -39,8 +39,8 @@ public:
     void routine(Server& serv);
     void handleEvents(int sock, Server& serv);
     void handleNewClients(int sock, Server& serv) const;
-    void addFd(int fd) const;
-    void delAndCloseSocket(int sock, Server& serv) const;
+    void addFd(int fd, bool in) const;
+    void delAndCloseSocket(int sock) const;
 
 // Static Variable
     static bool isRunning;

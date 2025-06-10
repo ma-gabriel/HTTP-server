@@ -54,7 +54,6 @@ Server::~Server(void)
 	}
 	{
 		std::map<int, CGI::infos>::iterator it;
-#ifdef LINUX
 		for (it = this->_CGIs.begin(); it != this->_CGIs.end(); it++) {
 			close(it->first);
 			if (it->second.pid) {
@@ -62,7 +61,6 @@ Server::~Server(void)
 				kill(it->second.pid, SIGKILL);
 			}
 		}
-#endif
 	}
 		std::for_each(this->_clients.begin(), this->_clients.end(), close);
 
@@ -135,19 +133,24 @@ bool Server::isServSocket(int fd) const
 	return (false);
 }
 
-#ifdef LINUX
-bool Server::addCGI(int fd, CGI::infos infos, int flags)
+bool Server::addCGI(int fd, CGI::infos infos, bool in)
 {
-	struct epoll_event event;
-
-	event.data.fd = fd;
-	event.events = flags;
-	if (epoll_ctl(Epoll::instance().getFd(), EPOLL_CTL_ADD, fd, &event) == -1)
-		return false;
+	Epoll::instance().addFd(fd, in);
 	_CGIs[fd] = infos;
 	return true;
 }
 
+static void delFD(int fd)
+{
+	#ifdef LINUX
+	epoll_ctl(Epoll::instance().getFd(), EPOLL_CTL_DEL, fd, NULL);
+	#else
+	struct kevent change;
+	EV_SET(&change, sock,  EVFILT_READ, EV_DELETE, 0, 0, NULL);
+	kevent(this->_fd, &change, 1,  NULL, 0, NULL);
+	# endif
+	close(fd);
+}
 
 void Server::handleCGI(epoll_event event)
 {
@@ -158,16 +161,14 @@ void Server::handleCGI(epoll_event event)
 		if (event.events & EPOLLOUT){
 			ssize_t len = write(fd, infos.body.c_str(), infos.body.length());
 			if (len == -1 || static_cast<size_t>(len) == infos.body.length()){
-				epoll_ctl(Epoll::instance().getFd(), EPOLL_CTL_DEL, fd, NULL);
-				close(fd);
+				delFD(fd);
 				_CGIs.erase(fd);
 				return ;
 			}
 			infos.body = infos.body.substr(len);
 		}
 		if (event.events & EPOLLHUP || event.events & EPOLLERR){
-			epoll_ctl(Epoll::instance().getFd(), EPOLL_CTL_DEL, fd, NULL);
-			close(fd);
+			delFD(fd);
 			_CGIs.erase(fd);
 			return ;
 		}
@@ -182,8 +183,7 @@ void Server::handleCGI(epoll_event event)
 		}
 		if (event.events & EPOLLHUP || event.events & EPOLLERR){
 			CGI::flush(infos.output_fd, infos.body);
-			epoll_ctl(Epoll::instance().getFd(), EPOLL_CTL_DEL, fd, NULL);
-			close(fd);
+			delFD(fd);
 			close(infos.output_fd);
 			kill(infos.pid, SIGKILL);
 			_CGIs.erase(fd);
@@ -210,15 +210,12 @@ void Server::routineCGI()
 				close(it->second.output_fd);
 				kill(it->second.pid, SIGKILL);
 			}
-			epoll_ctl(Epoll::instance().getFd(), EPOLL_CTL_DEL, it->first, NULL);
-			close(it->first);
+			delFD(it->first);
 			_CGIs.erase(it++);
 		}
 		else it++;
 	}
 }
-#endif
-
 
 // Public member functions
 int Server::newInstance(ConfigurationServer server)
@@ -321,12 +318,10 @@ void Server::handleRequest(int sock)
 		return ;
 	}
 
-#ifdef LINUX
 	if (doCGI(*req) == true){
 		delete req;
 		return ;
 	}
-#endif
 
 	Response resp(req);
 	std::string buff = resp.createResponse();
