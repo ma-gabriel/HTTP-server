@@ -7,14 +7,14 @@
 #include <cstdlib>
 
 
-ConfigurationServer::ConfigurationServer(): AAtributes(), _portString(nullptr), _host(nullptr), _port(0) {
+ConfigurationServer::ConfigurationServer(): AAtributes(), _portString(NULL), _host(NULL), _port(0) {
 }
 
 ConfigurationServer::~ConfigurationServer() {
 
 }
 
-ConfigurationServer::ConfigurationServer(std::vector<std::string>::iterator &begin, const std::vector<std::string>::iterator &end): AAtributes(), _portString(nullptr), _host(nullptr), _port(0){
+ConfigurationServer::ConfigurationServer(std::vector<std::string>::iterator &begin, const std::vector<std::string>::iterator &end): AAtributes(), _portString(NULL), _host(NULL), _port(0){
     if (++begin == end || *begin != "{")
         throw std::runtime_error("after server is not left brace ");
     while (++begin != end && *begin != "}") {

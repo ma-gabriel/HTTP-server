@@ -113,7 +113,7 @@ void Epoll::routine(Server &serv)
 	}
     #else
 	int eventKqueue;
-	eventKqueue = kevent(this->_fd, NULL, 0, this->_events, MAXEVENT, nullptr);
+	eventKqueue = kevent(this->_fd, NULL, 0, this->_events, MAXEVENT, NULL);
 	if (eventKqueue == -1){
 		perror("epoll_wait");
 	}
@@ -173,7 +173,7 @@ void Epoll::addFd(int fd) const
 
 	struct kevent change;
 	EV_SET(&change, fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, NULL);
-	if (kevent(this->_fd, &change, 1,  NULL, 0, nullptr) == -1) {
+	if (kevent(this->_fd, &change, 1,  NULL, 0, NULL) == -1) {
 		perror("kevent add client");
 		close(fd);
 		return;
@@ -198,7 +198,7 @@ void Epoll::delAndCloseSocket(int sock, Server &serv) const
 	struct kevent change;
 	EV_SET(&change, sock,  EVFILT_READ, EV_DELETE, 0, 0, NULL);
 
-	if (kevent(this->_fd, &change, 1,  NULL, 0, nullptr) == -1){
+	if (kevent(this->_fd, &change, 1,  NULL, 0, NULL) == -1){
 		perror("kevent add client");
 		close(sock);
 		return;

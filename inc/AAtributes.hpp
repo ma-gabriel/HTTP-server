@@ -36,6 +36,7 @@ protected:
 
 public:
     AAtributes();
+    AAtributes(const AAtributes &a);
     AAtributes(const std::string &root, const std::map<int, std::string> &error_pages, const std::vector<EHttpMethode> &http_methode,  bool auto_index, const std::vector<std::string> &index);
     virtual ~AAtributes();
     const std::string &getRoot() const;
