@@ -12,6 +12,10 @@
 # include <map>
 # include "utils.hpp"
 
+enum Boolean {
+    FALSE, TRUE, Null
+};
+
 class AAtributes
 {
 private:
@@ -27,7 +31,7 @@ protected:
     std::string					_root;
     std::map<int, std::string> 	_errorPages;
     std::vector<EHttpMethode> 	_httpMethode;
-    bool						_autoIndex;
+    Boolean						_autoIndex;
     std::vector <std::string>	_index;
     std::vector <std::string>	_cgi;
     int                         _maxBodySize;
@@ -37,7 +41,6 @@ protected:
 public:
     AAtributes();
     AAtributes(const AAtributes &a);
-    AAtributes(const std::string &root, const std::map<int, std::string> &error_pages, const std::vector<EHttpMethode> &http_methode,  bool auto_index, const std::vector<std::string> &index);
     virtual ~AAtributes();
     const std::string &getRoot() const;
     const std::map<int, std::string> &getErrorPages() const;
@@ -48,7 +51,7 @@ public:
     void setHttpMethode(const std::vector<EHttpMethode> &httpMethode);
     void setErrorPages(const std::map<int, std::string> &errorPages);
     void setIndex(const std::vector<std::string> &index);
-    void setAutoIndex(bool autoIndex);
+    void setAutoIndex(Boolean autoIndex);
     const std::vector<std::string> &getCgi() const;
     int getMaxBodySize() const;
 };

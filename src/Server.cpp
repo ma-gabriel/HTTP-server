@@ -4,12 +4,10 @@
 #include <cstdio>
 #include <unistd.h>
 #include <arpa/inet.h>
-#include <fcntl.h>
 #include <algorithm>
 #include <cstring>
 #include <signal.h>
-#include <limits>
-#include <sys/wait.h>
+
 
 #include "Request.hpp"
 #include "Response.hpp"

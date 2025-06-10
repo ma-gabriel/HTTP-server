@@ -20,7 +20,7 @@ Parser::~Parser()
 
 }
 
-Parser::Parser(const std::string &config_file): _configFile(config_file)
+Parser::ParserFile(const std::string &config_file)
 {
     std::ifstream file(config_file.c_str());
     if (!file.is_open())
@@ -66,30 +66,18 @@ std::vector<std::string> Parser::getAllToken(std::string &str)
 
 void Parser::createAllServeur(std::vector<std::string> &allTokens){
     std::vector<std::string>::iterator it;
-    for (it = allTokens.begin(); it != allTokens.end(); ++it) {
+    std::vector<std::string>::iterator end = allTokens.end();
+    for (it = allTokens.begin(); it != end; ++it) {
         if (*it == "server"){
             ConfigurationServer server(it, allTokens.end());
             this->_allServeur[server.getPort()] = server;
         }
+        else
+            this->addAttributes(it, end);
         std::cout << "Number of servers created: " << this->_allServeur.size() << std::endl;
     }
 }
 
-void Parser::ParseFile(std::string &fileContent)
-{
-    (void)fileContent;
-}
+Parser::Parser() {
 
-const std::string &Parser::getConfigFile() const
-{
-    return _configFile;
-}
-
-void Parser::setConfigFile(const std::string &configFile)
-{
-    _configFile = configFile;
-}
-
-const std::map<int, ConfigurationServer> &Parser::getAllServeur() const {
-    return _allServeur;
 }

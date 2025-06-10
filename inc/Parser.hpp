@@ -10,20 +10,19 @@
 
 class Parser : public AAtributes
 {
+
 private:
-    std::string _configFile;
-    std::map<int, ConfigurationServer> _allServeur;
-    void ParseFile(std::string &fileContent);
     void    readFile(std::ifstream &file);
     void    createAllServeur(std::vector<std::string> &allTokens);
+    Parser();
 
 public:
+    std::map<int, ConfigurationServer> ParseFile(std::string &fileContent);
     const std::map<int, ConfigurationServer> &getAllServeur() const;
     const std::string &getConfigFile() const;
     void setConfigFile(const std::string &configFile);
     std::vector<std::string> getAllToken(std::string &str);
     ~Parser();
-    Parser(const std::string &config_file);
 };
 
 #endif

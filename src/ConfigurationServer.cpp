@@ -109,7 +109,8 @@ ConfigurationServer &ConfigurationServer::operator=(const ConfigurationServer &f
     return (*this);
 }
 
-ConfigurationServer::ConfigurationServer(const ConfigurationServer &from)
+ConfigurationServer::ConfigurationServer(const ConfigurationServer &from):
+AAtributes(from)
 {
     this->_host = from._host;
     this->_port = from._port;
