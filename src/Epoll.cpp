@@ -113,8 +113,8 @@ void Epoll::routine(Server &serv)
 	}
 	for (int i = 0; i < eventKqueue; i++)
 	{
-		// if (serv.isCGI(this->_events[i].ident) == true)
-		// 	serv.handleCGI(this->_events[i]);
+		if (serv.isCGI(this->_events[i].ident) == true)
+		 	serv.handleCGI(this->_events[i]);
 		if (this->_events[i].flags & EV_EOF) {
 			this->delAndCloseSocket(this->_events[i].ident);
 		}

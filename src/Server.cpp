@@ -152,6 +152,7 @@ static void delFD(int fd)
 	close(fd);
 }
 
+#ifdef LINUX
 void Server::handleCGI(epoll_event event)
 {
 	int fd = event.data.fd;
@@ -190,6 +191,48 @@ void Server::handleCGI(epoll_event event)
 		}
 	}
 }
+
+#else
+void Server::handleCGI(struct kevent event)
+{
+	int fd = kev.ident;
+	CGI::infos &infos = _CGIs[fd];
+
+	if (infos.pid == -1)
+	{
+		if (kev.filter == EVFILT_WRITE) {
+			ssize_t len = write(fd, infos.body.c_str(), infos.body.length());
+			if (len == -1 || static_cast<size_t>(len) == infos.body.length()) {
+				delFD(fd);
+				_CGIs.erase(fd);
+				return;
+			}
+			infos.body = infos.body.substr(len);
+		}
+		if ((kev.flags & EV_EOF) || (kev.flags & EV_ERROR)) {
+			delFD(fd);
+			_CGIs.erase(fd);
+			return;
+		}
+	}
+	else
+	{
+		if (kev.filter == EVFILT_READ) {
+			char buffer[65537];
+			ssize_t len = read(fd, buffer, 65536);
+			if (len != -1)
+				infos.body.append(buffer, len);
+		}
+		if ((kev.flags & EV_EOF) || (kev.flags & EV_ERROR)) {
+			CGI::flush(infos.output_fd, infos.body);
+			delFD(fd);
+			close(infos.output_fd);
+			kill(infos.pid, SIGKILL);
+			_CGIs.erase(fd);
+		}
+	}
+}
+#endif
 
 bool Server::isCGI(int fd) const
 {

@@ -48,7 +48,11 @@ public:
 	void handleNewClients(Epoll& epoll, int socket);
 
 	// CGI handlers
+#ifdef LINUX
 	void handleCGI(epoll_event event);
+#else
+	void handleCGI(strcut kevent event);
+#endif
 
 	bool isCGI(int fd) const;
 	bool addCGI(int fd, CGI::infos infos,bool in);
