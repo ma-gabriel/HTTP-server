@@ -9,8 +9,6 @@
 #endif
 
 
-#include "ARequest.hpp"
-
 bool Epoll::isRunning = true;
 
 Epoll &Epoll::instance()

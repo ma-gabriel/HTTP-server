@@ -21,7 +21,6 @@ SRCS_FILES		= main.cpp \
                   Location.cpp \
                   Parser.cpp \
                   args.cpp \
-                  ARequest.cpp \
                   ConfigurationServer.cpp \
                   utils/isSeparator.cpp \
                   utils/strNoCase.cpp \
@@ -32,6 +31,7 @@ SRCS_FILES		= main.cpp \
 
 ifeq ($(OS), Linux)
 	CFLAGS += -DLINUX
+	SRCS += CGI.cpp
 endif
 
 SRCS = $(addprefix $(SRCS_PATH)/, $(SRCS_FILES))
