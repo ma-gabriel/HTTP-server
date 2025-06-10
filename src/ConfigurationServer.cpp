@@ -106,6 +106,7 @@ ConfigurationServer &ConfigurationServer::operator=(const ConfigurationServer &f
     this->_port = from._port;
     this->_portString = from._portString;
     this->_serverNames = from._serverNames;
+    this->_location = from._location;
     return (*this);
 }
 

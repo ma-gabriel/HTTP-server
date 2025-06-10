@@ -26,7 +26,9 @@ int main(int argc, char **argv) // no variable for -Werror=unused-parameter
 		signal(SIGINT, sigint_handler);
 		for (std::map<int, ConfigurationServer>::const_iterator it = config.getAllServeur().begin();
 			it != config.getAllServeur().end(); ++it) {
+			std::cout << argv[0] << "1" << std::endl;
 			epoll.addFd(server.newInstance(it->second), true);
+			std::cout << argv[0] << "2"<< std::endl;
 		}
 		while (Epoll::isRunning)
 				epoll.routine(Server::instance());

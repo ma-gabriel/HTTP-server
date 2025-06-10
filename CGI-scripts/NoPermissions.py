@@ -1,5 +1,3 @@
-
-
 badum tss
 
 I am not a real script

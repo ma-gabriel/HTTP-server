@@ -51,7 +51,7 @@ public:
 #ifdef LINUX
 	void handleCGI(epoll_event event);
 #else
-	void handleCGI(strcut kevent event);
+	void handleCGI(struct kevent event);
 #endif
 
 	bool isCGI(int fd) const;

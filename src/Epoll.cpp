@@ -150,6 +150,8 @@ void Epoll::handleNewClients(int sock, Server &serv) const
 
 void Epoll::addFd(int fd, bool in) const
 {
+	if (fd == -1)
+		return;
 	#ifdef LINUX
 	struct epoll_event event;
 

@@ -71,7 +71,6 @@ void Parser::createAllServeur(std::vector<std::string> &allTokens){
             ConfigurationServer server(it, allTokens.end());
             this->_allServeur[server.getPort()] = server;
         }
-        std::cout << "Number of servers created: " << this->_allServeur.size() << std::endl;
     }
 }
 

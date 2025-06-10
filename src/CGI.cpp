@@ -36,7 +36,8 @@ bool doCGI(const Request &req)
 {
 	//TODO need the config files 
 	std::map<std::string, std::string> extensions;
-	extensions[".py"] = "/usr/bin/python3.10";
+	std::cout << "create extesions" << std::endl;
+	extensions[".py"] = "/usr/bin/python3";
 	extensions[".php"] = "/usr/bin/php";
 
 	// TODO the second argument is from the config file
