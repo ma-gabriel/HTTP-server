@@ -36,7 +36,6 @@ bool doCGI(const Request &req)
 {
 	//TODO need the config files 
 	std::map<std::string, std::string> extensions;
-	std::cout << "create extesions" << std::endl;
 	extensions[".py"] = "/usr/bin/python3";
 	extensions[".php"] = "/usr/bin/php";
 
@@ -51,7 +50,7 @@ bool doCGI(const Request &req)
 		ERROR_404(req.getSock());
 		return true;
 	}
-	
+
 	if (!CGI::checkfileexec(bin) || !CGI::checkfileexec(filePath)){
 		// TODO change macro to better error 403
 		ERROR_403(req.getSock());
@@ -83,7 +82,7 @@ void CGI::launch(const Request &req, const std::string &binPath, std::string fil
 		close(handle._socket);
 		return ;
 	}
-	
+
 	pid_t pid = fork();
 	if (pid == -1) {
 		close(handle._toCGI[0]); close(handle._toCGI[1]);

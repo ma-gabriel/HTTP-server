@@ -38,14 +38,15 @@ public:
 // Public member functions
     void routine(Server& serv);
     void handleEvents(int sock, Server& serv);
-    void handleNewClients(int sock, Server& serv) const;
-    void addFd(int fd, bool in) const;
-    void delAndCloseSocket(int sock) const;
+    void handleNewClients(int sock, Server& serv) ;
+    void addFd(int fd, bool in) ;
+    void delAndCloseSocket(int sock);
 
 // Static Variable
     static bool isRunning;
 
 private:
+    std::vector<int> _epollWrite;
     int _fd;
 #ifdef LINUX
     struct epoll_event *_events;

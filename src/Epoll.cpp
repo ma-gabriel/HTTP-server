@@ -115,7 +115,7 @@ void Epoll::routine(Server &serv)
 	{
 		if (serv.isCGI(this->_events[i].ident) == true)
 		 	serv.handleCGI(this->_events[i]);
-		if (this->_events[i].flags & EV_EOF) {
+		else if (this->_events[i].flags & EV_EOF) {
 			this->delAndCloseSocket(this->_events[i].ident);
 		}
 		else {
@@ -136,19 +136,20 @@ void Epoll::handleEvents(int sock, Server& serv)
 		std::cout << "Receiving new request from " << serv.getClientAddress(sock) << std::endl;
 #endif
 		serv.handleRequest(sock);
+		std::cout <<"sock" <<sock;
 		this->delAndCloseSocket(sock);
 	}
 }
 
 
-void Epoll::handleNewClients(int sock, Server &serv) const
+void Epoll::handleNewClients(int sock, Server &serv)
 {
 	int client_sock = serv.newClient(sock);
 	if (client_sock != -1)
 		this->addFd(client_sock, true);
 }
 
-void Epoll::addFd(int fd, bool in) const
+void Epoll::addFd(int fd, bool in)
 {
 	if (fd == -1)
 		return;
@@ -168,16 +169,18 @@ void Epoll::addFd(int fd, bool in) const
 	fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 
 	struct kevent change;
-	EV_SET(&change, fd, (EVFILT_READ * in) + (EVFILT_WRITE * !in), EV_ADD | EV_ENABLE, 0, 0, NULL);
+	if (!in) {
+		this->_epollWrite.push_back(fd);
+	}
+	EV_SET(&change, fd, in ? EVFILT_READ : EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, NULL);
 	if (kevent(this->_fd, &change, 1,  NULL, 0, NULL) == -1) {
-		perror("kevent add client");
 		close(fd);
 		return;
 	}
 	#endif
 }
 
-void Epoll::delAndCloseSocket(int sock) const
+void Epoll::delAndCloseSocket(int sock)
 {
 	#ifdef LINUX
 	if (epoll_ctl(this->_fd, EPOLL_CTL_DEL, sock, NULL) == -1)
@@ -187,16 +190,19 @@ void Epoll::delAndCloseSocket(int sock) const
 	}
 	#else
 	struct kevent change;
-	EV_SET(&change, sock,  EVFILT_READ, EV_DELETE, 0, 0, NULL);
+	bool write = std::find(this->_epollWrite.begin(), this->_epollWrite.end(), sock) != this->_epollWrite.end();
+	EV_SET(&change, sock,  (write ? EVFILT_WRITE : EVFILT_READ), EV_DELETE, 0, 0, NULL);
 
 	if (kevent(this->_fd, &change, 1,  NULL, 0, NULL) == -1){
-		perror("kevent add client");
+		perror("kevent add client3");
 		close(sock);
 		return;
 	}
 
 	#endif
 	close(sock);
+	if (write)
+		this->_epollWrite.erase(std::remove(this->_epollWrite.begin(), this->_epollWrite.end(), sock), this->_epollWrite.end());
 	Server::instance().delClient(sock);
 }
 
