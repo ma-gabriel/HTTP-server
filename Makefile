@@ -26,12 +26,12 @@ SRCS_FILES		= main.cpp \
                   utils/strNoCase.cpp \
                   utils/strIsdigit.cpp \
                   exceptions/LocationException.cpp \
-                  Epoll.cpp
+                  Epoll.cpp \
+                  CGI.cpp
 
 
 ifeq ($(OS), Linux)
 	CFLAGS += -DLINUX
-	SRCS += CGI.cpp
 endif
 
 SRCS = $(addprefix $(SRCS_PATH)/, $(SRCS_FILES))

@@ -1,6 +1,14 @@
 #ifndef SERVER_HPP
 # define SERVER_HPP
+# include <ostream>
 
+#ifdef LINUX
+# include <sys/epoll.h>
+#else
+# include <sys/fcntl.h>
+# include <sys/event.h>
+# include <sys/time.h>
+#endif
 # include <ostream>
 # include <sys/socket.h>
 # include <sys/types.h>
@@ -37,16 +45,18 @@ public:
 	int newInstance(ConfigurationServer server);
 	int newClient(int sock);
 	void handleRequest(int sock);
-#ifdef LINUX
 	void handleNewClients(Epoll& epoll, int socket);
 
 	// CGI handlers
+#ifdef LINUX
 	void handleCGI(epoll_event event);
+#else
+	void handleCGI(struct kevent event);
+#endif
 
 	bool isCGI(int fd) const;
-	bool addCGI(int fd, CGI::infos infos, int flags);
+	bool addCGI(int fd, CGI::infos infos,bool in);
 	void routineCGI();
-#endif
 private:
 	// Constructors
 	Server(void);
@@ -54,9 +64,7 @@ private:
 	// Overloaded operators
 	Server &operator=(const Server &from);
 	// data members
-#ifdef LINUX
 	std::map<int, CGI::infos> _CGIs;
-#endif
 	std::map<int, ConfigurationServer> _instances;
 	std::deque<int> _clients;
 

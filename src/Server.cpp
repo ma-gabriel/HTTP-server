@@ -52,7 +52,6 @@ Server::~Server(void)
 	}
 	{
 		std::map<int, CGI::infos>::iterator it;
-#ifdef LINUX
 		for (it = this->_CGIs.begin(); it != this->_CGIs.end(); it++) {
 			close(it->first);
 			if (it->second.pid) {
@@ -60,7 +59,6 @@ Server::~Server(void)
 				kill(it->second.pid, SIGKILL);
 			}
 		}
-#endif
 	}
 		std::for_each(this->_clients.begin(), this->_clients.end(), close);
 
@@ -133,20 +131,26 @@ bool Server::isServSocket(int fd) const
 	return (false);
 }
 
-#ifdef LINUX
-bool Server::addCGI(int fd, CGI::infos infos, int flags)
+bool Server::addCGI(int fd, CGI::infos infos, bool in)
 {
-	struct epoll_event event;
-
-	event.data.fd = fd;
-	event.events = flags;
-	if (epoll_ctl(Epoll::instance().getFd(), EPOLL_CTL_ADD, fd, &event) == -1)
-		return false;
+	Epoll::instance().addFd(fd, in);
 	_CGIs[fd] = infos;
 	return true;
 }
 
+static void delFD(int fd)
+{
+	#ifdef LINUX
+	epoll_ctl(Epoll::instance().getFd(), EPOLL_CTL_DEL, fd, NULL);
+	#else
+	struct kevent change;
+	EV_SET(&change, fd,  EVFILT_READ, EV_DELETE, 0, 0, NULL);
+	kevent(Epoll::instance().getFd(), &change, 1,  NULL, 0, NULL);
+	# endif
+	close(fd);
+}
 
+#ifdef LINUX
 void Server::handleCGI(epoll_event event)
 {
 	int fd = event.data.fd;
@@ -156,16 +160,14 @@ void Server::handleCGI(epoll_event event)
 		if (event.events & EPOLLOUT){
 			ssize_t len = write(fd, infos.body.c_str(), infos.body.length());
 			if (len == -1 || static_cast<size_t>(len) == infos.body.length()){
-				epoll_ctl(Epoll::instance().getFd(), EPOLL_CTL_DEL, fd, NULL);
-				close(fd);
+				delFD(fd);
 				_CGIs.erase(fd);
 				return ;
 			}
 			infos.body = infos.body.substr(len);
 		}
 		if (event.events & EPOLLHUP || event.events & EPOLLERR){
-			epoll_ctl(Epoll::instance().getFd(), EPOLL_CTL_DEL, fd, NULL);
-			close(fd);
+			delFD(fd);
 			_CGIs.erase(fd);
 			return ;
 		}
@@ -180,14 +182,55 @@ void Server::handleCGI(epoll_event event)
 		}
 		if (event.events & EPOLLHUP || event.events & EPOLLERR){
 			CGI::flush(infos.output_fd, infos.body);
-			epoll_ctl(Epoll::instance().getFd(), EPOLL_CTL_DEL, fd, NULL);
-			close(fd);
+			delFD(fd);
 			close(infos.output_fd);
 			kill(infos.pid, SIGKILL);
 			_CGIs.erase(fd);
 		}
 	}
 }
+
+#else
+void Server::handleCGI(struct kevent kev)
+{
+	int fd = kev.ident;
+	CGI::infos &infos = _CGIs[fd];
+
+	if (infos.pid == -1)
+	{
+		if (kev.filter == EVFILT_WRITE) {
+			ssize_t len = write(fd, infos.body.c_str(), infos.body.length());
+			if (len == -1 || static_cast<size_t>(len) == infos.body.length()) {
+				delFD(fd);
+				_CGIs.erase(fd);
+				return;
+			}
+			infos.body = infos.body.substr(len);
+		}
+		if ((kev.flags & EV_EOF) || (kev.flags & EV_ERROR)) {
+			delFD(fd);
+			_CGIs.erase(fd);
+			return;
+		}
+	}
+	else
+	{
+		if (kev.filter == EVFILT_READ) {
+			char buffer[65537];
+			ssize_t len = read(fd, buffer, 65536);
+			if (len != -1)
+				infos.body.append(buffer, len);
+		}
+		if ((kev.flags & EV_EOF) || (kev.flags & EV_ERROR)) {
+			CGI::flush(infos.output_fd, infos.body);
+			delFD(fd);
+			close(infos.output_fd);
+			kill(infos.pid, SIGKILL);
+			_CGIs.erase(fd);
+		}
+	}
+}
+#endif
 
 bool Server::isCGI(int fd) const
 {
@@ -208,26 +251,24 @@ void Server::routineCGI()
 				close(it->second.output_fd);
 				kill(it->second.pid, SIGKILL);
 			}
-			epoll_ctl(Epoll::instance().getFd(), EPOLL_CTL_DEL, it->first, NULL);
-			close(it->first);
+			delFD(it->first);
 			_CGIs.erase(it++);
 		}
 		else it++;
 	}
 }
-#endif
-
 
 // Public member functions
 int Server::newInstance(ConfigurationServer server)
 {
 	// Oppening socket for IPv4 communication (AF_INET),
 	// using TCP protocol (SOCK_STREAM)
+	std::cout << "1";
 	int sock = socket(AF_INET, SOCK_STREAM, 0);
 	if (sock == -1)
 	{
 		perror("socket");
-		return(0);
+		return(-1);
 	}
 
 	// Enabling (opt_value = 1) different options on socket,
@@ -245,37 +286,36 @@ int Server::newInstance(ConfigurationServer server)
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;    // IPv4 ou IPv6
 	hints.ai_socktype = SOCK_STREAM; // TCP
-
-	if (getaddrinfo(server.getHost(), server.getPortString(), &hints, &result) == -1) {
+	if (getaddrinfo("0.0.0.0", server.getPortString(), &hints, &result) != 0) {
 		perror("bind");
 		close(sock);
-		return(0);
+		return(-1);
 	}
-
 	// Assinging the newly created socket to the address and port
 	int bindStatus = bind(sock,  result->ai_addr, result->ai_addrlen);
 	freeaddrinfo(result);
+	std::cout << "2";
 	if (bindStatus == -1)
 	{
 		perror("bind");
 		close(sock);
-		return(0);
+		return(-1);
 	}
-
 	// Set the newly created and binded socket to listen,
 	// and set max client listening queue to maximum (SOMAXCONN)
 	if (listen(sock, SOMAXCONN) == -1)
 	{
 		perror("listen");
 		close(sock);
-		return(0);
+		return(-1);
 	}
-
+	std::cout << "2";
 #ifdef DEBUG
 	std::cout << "Server now listing on " << inet_ntoa(addr.sin_addr) << " port " << port << std::endl;
 #endif
 
 	this->_instances.insert(std::make_pair(sock, server));
+	std::cout << "c'est bon !";
 	return(sock);
 }
 
@@ -319,12 +359,10 @@ void Server::handleRequest(int sock)
 		return ;
 	}
 
-#ifdef LINUX
 	if (doCGI(*req) == true){
 		delete req;
 		return ;
 	}
-#endif
 
 	Response resp(req);
 	std::string buff = resp.createResponse();

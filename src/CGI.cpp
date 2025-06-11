@@ -36,7 +36,7 @@ bool doCGI(const Request &req)
 {
 	//TODO need the config files 
 	std::map<std::string, std::string> extensions;
-	extensions[".py"] = "/usr/bin/python3.10";
+	extensions[".py"] = "/usr/bin/python3";
 	extensions[".php"] = "/usr/bin/php";
 
 	// TODO the second argument is from the config file
@@ -50,7 +50,7 @@ bool doCGI(const Request &req)
 		ERROR_404(req.getSock());
 		return true;
 	}
-	
+
 	if (!CGI::checkfileexec(bin) || !CGI::checkfileexec(filePath)){
 		// TODO change macro to better error 403
 		ERROR_403(req.getSock());
@@ -82,7 +82,7 @@ void CGI::launch(const Request &req, const std::string &binPath, std::string fil
 		close(handle._socket);
 		return ;
 	}
-	
+
 	pid_t pid = fork();
 	if (pid == -1) {
 		close(handle._toCGI[0]); close(handle._toCGI[1]);
@@ -124,9 +124,9 @@ void CGI::parentHandling(pid_t pid)
 		return ;
 	}
 	//if this one fails (like kernel error) the CGI won't have a body, at worst, time-out
-	Server::instance().addCGI(_toCGI[1], generate(std::time(NULL), -1, -1, _body),  EPOLLOUT | EPOLLHUP | EPOLLERR);
+	Server::instance().addCGI(_toCGI[1], generate(std::time(NULL), -1, -1, _body),  false);
 	//TODO change macro to error 500
-	if (!Server::instance().addCGI(_fromCGI[0], generate(std::time(NULL), pid, _socket, ""), EPOLLIN | EPOLLHUP | EPOLLERR)){
+	if (!Server::instance().addCGI(_fromCGI[0], generate(std::time(NULL), pid, _socket, ""), true)){
 		kill(pid, SIGKILL);
 		ERROR_500(_socket);
 		close(_socket);

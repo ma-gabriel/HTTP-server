@@ -83,9 +83,7 @@ std::map<int, ConfigurationServer> Parser::createAllServeur(std::vector<std::str
     return config;
 }
 
-Parser::Parser() {
-    std::cout << "Parser created" << std::endl;
-}
+Parser::Parser() {}
 
 Parser &Parser::instance() {
     static Parser instance;
