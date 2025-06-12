@@ -1,6 +1,7 @@
 #include "Epoll.hpp"
 #include <string.h> //strerror
 #include <iostream>
+#include <time.h>
 #ifndef COLORS
 
 # define GREY "\033[1;30m"
@@ -107,7 +108,10 @@ void Epoll::routine(Server &serv)
 	}
     #else
 	int eventKqueue;
-	eventKqueue = kevent(this->_fd, NULL, 0, this->_events, MAXEVENT, NULL);
+	struct timespec timeout;
+	timeout.tv_sec = 1;
+	timeout.tv_nsec = 0;
+	eventKqueue = kevent(this->_fd, NULL, 0, this->_events, MAXEVENT, &timeout);
 	if (eventKqueue == -1){
 		perror("epoll_wait");
 	}
@@ -123,7 +127,7 @@ void Epoll::routine(Server &serv)
 		}
 	}
 	#endif
-	// serv.routineCGI();
+	serv.routineCGI();
 }
 
 void Epoll::handleEvents(int sock, Server& serv)
@@ -198,11 +202,11 @@ void Epoll::delAndCloseSocket(int sock)
 		close(sock);
 		return;
 	}
-
-	#endif
-	close(sock);
 	if (write)
 		this->_epollWrite.erase(std::remove(this->_epollWrite.begin(), this->_epollWrite.end(), sock), this->_epollWrite.end());
+	
+	#endif
+	close(sock);
 	Server::instance().delClient(sock);
 }
 

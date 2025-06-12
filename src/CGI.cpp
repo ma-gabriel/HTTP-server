@@ -9,6 +9,7 @@
 #include <cstring>
 #include <algorithm>
 #include <signal.h>
+#include <sstream>
 #include <fcntl.h>
 #include <sys/wait.h>
 
@@ -34,10 +35,12 @@ CGI::~CGI(){}
 
 bool doCGI(const Request &req)
 {
-	//TODO need the config files 
+	//TODO need to be in the config files
+	// subject : "Execute CGI based on certain file extension (for example .php)."
 	std::map<std::string, std::string> extensions;
 	extensions[".py"] = "/usr/bin/python3";
 	extensions[".php"] = "/usr/bin/php";
+	extensions[".js"] = "/usr/bin/node";
 
 	// TODO the second argument is from the config file
 	std::string filePath = CGI::getActualPath(req.getPath(), "./CGI-scripts");
@@ -168,12 +171,27 @@ ssize_t CGI::flush(int fd, std::string text){
 	ssize_t total = 0, len;
 	size_t status = text.find("Status: ");
 	size_t body = text.find("\r\n\r\n");
-	if (status != std::string::npos && body != std::string::npos && status < body){
+	size_t length = text.find("Content-Length: ");
+	size_t type = text.find("Content-Type: ");
+	if (body == std::string::npos) {
+		text = static_cast< std::ostringstream & >(( std::ostringstream() << std::dec << \
+			"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: " << text.length() << "\r\n\r\n")).str() + text;
+		goto end_treating;
+	}
+	if (status != std::string::npos && status < body){
 		std::string status_line = "HTTP/1.1 " + text.substr(status + 8, text.find("\r\n", status) - 8);
 		text.erase(status, text.find("\r\n", status));
 		text = status_line + text;
 	}
 	else text = "HTTP/1.1 200 OK\r\n" + text;
+	if (type == std::string::npos || type > body){
+		text.insert(text.find("\r\n\r\n") + 2, "Content-Type: text/html\r\n");
+	}
+	if (length == std::string::npos || body == std::string::npos || length > body){
+		text.insert(text.find("\r\n\r\n") + 2, static_cast< std::ostringstream & >((std::ostringstream() << std::dec \
+		<< "Content-Length: " << text.length() - text.find("\r\n\r\n") - 4 << "\r\n")).str());
+	}
+	end_treating :
 	do {
 		len = send(fd, text.c_str(), text.length(), 0);
 		if (len == -1) return -1;

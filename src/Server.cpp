@@ -265,7 +265,6 @@ int Server::newInstance(ConfigurationServer server)
 {
 	// Oppening socket for IPv4 communication (AF_INET),
 	// using TCP protocol (SOCK_STREAM)
-	std::cout << "1";
 	int sock = socket(AF_INET, SOCK_STREAM, 0);
 	if (sock == -1)
 	{
@@ -291,12 +290,10 @@ int Server::newInstance(ConfigurationServer server)
 	if (getaddrinfo("0.0.0.0", server.getPortString(), &hints, &result) != 0) {
 		perror("bind");
 		close(sock);
-		return(-1);
 	}
 	// Assinging the newly created socket to the address and port
 	int bindStatus = bind(sock,  result->ai_addr, result->ai_addrlen);
 	freeaddrinfo(result);
-	std::cout << "2";
 	if (bindStatus == -1)
 	{
 		perror("bind");
@@ -311,13 +308,11 @@ int Server::newInstance(ConfigurationServer server)
 		close(sock);
 		return(-1);
 	}
-	std::cout << "2";
 #ifdef DEBUG
 	std::cout << "Server now listing on " << inet_ntoa(addr.sin_addr) << " port " << port << std::endl;
 #endif
 
 	this->_instances.insert(std::make_pair(sock, server));
-	std::cout << "c'est bon !";
 	return(sock);
 }
 
