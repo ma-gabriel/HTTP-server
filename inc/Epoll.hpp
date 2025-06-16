@@ -16,6 +16,7 @@
 #include <map>
 #include <utility>
 #include <ctime>
+#include <ConfigurationServer.hpp>
 
 #include "Server.hpp"
 
@@ -41,12 +42,14 @@ public:
     void handleNewClients(int sock, Server& serv) ;
     void addFd(int fd, bool in) ;
     void delAndCloseSocket(int sock);
+    std::map<int, ConfigurationServer> getFdClientConfigs() const;
 
 // Static Variable
     static bool isRunning;
 
 private:
     std::vector<int> _epollWrite;
+    std::map<int, ConfigurationServer> _fdClientsConfigs;
     int _fd;
 #ifdef LINUX
     struct epoll_event *_events;

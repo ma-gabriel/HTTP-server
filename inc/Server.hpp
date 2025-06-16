@@ -46,6 +46,7 @@ public:
 	int newClient(int sock);
 	void handleRequest(int sock);
 	void handleNewClients(Epoll& epoll, int socket);
+	std::map<int, ConfigurationServer> getInstances() const;
 
 	// CGI handlers
 #ifdef LINUX
@@ -57,6 +58,7 @@ public:
 	bool isCGI(int fd) const;
 	bool addCGI(int fd, CGI::infos infos,bool in);
 	void routineCGI();
+
 private:
 	// Constructors
 	Server(void);

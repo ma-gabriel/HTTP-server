@@ -21,7 +21,7 @@ public:
     ConfigurationServer(std::vector<std::string>::iterator &it, const std::vector<std::string>::iterator &end);
     const addrinfo *getAddr() const;
     const std::vector<std::string> &getServerNames() const;
-    const std::map<std::string, Location> &getLocation() const;
+     std::map<std::string, Location> &getLocation();
     ConfigurationServer &operator=(const ConfigurationServer &from);
      std::string &getPortString();
 
@@ -38,5 +38,5 @@ private:
     void addListen(std::vector<std::string>::iterator &it, int n);
 };
 
-std::ostream &operator<<(std::ostream &os, const ConfigurationServer &server);
+std::ostream &operator<<(std::ostream &os,  ConfigurationServer &server);
 #endif

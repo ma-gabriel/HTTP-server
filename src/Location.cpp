@@ -8,6 +8,10 @@ Location::~Location() {
 
 }
 
+Location::Location():Atributes(), _path("") {
+    // std::cout << "Location default constructor called" << std::endl;
+}
+
 Location::Location(const Location &location):Atributes(location){
     this->_path = location._path;
 }

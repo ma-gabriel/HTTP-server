@@ -285,7 +285,6 @@ int Server::newInstance(ConfigurationServer server)
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;    // IPv4 ou IPv6
 	hints.ai_socktype = SOCK_STREAM; // TCP
-	std::cout <<"port : " <<  server.getPortString()<< " host : "  << server.getHost() << std::endl;
 	if (getaddrinfo("0.0.0.0", server.getPortString().c_str(), &hints, &result) != 0) {
 		perror("bind");
 		close(sock);
@@ -366,6 +365,10 @@ void Server::handleRequest(int sock)
 	send(sock, buff.c_str(), buff.length(), 0);
 
 	delete req;
+}
+
+std::map<int, ConfigurationServer> Server::getInstances() const {
+	return this->_instances;
 }
 
 // Overloaded print operator

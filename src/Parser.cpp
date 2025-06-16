@@ -28,6 +28,7 @@ std::map<int, ConfigurationServer> Parser::ParseFile(const std::string &config_f
     std::string fileContent = this->readFile(file);
     std::vector<std::string> allTokens = getAllToken(fileContent);
     return createAllServeur(allTokens);
+
 }
 
 std::string Parser::readFile(std::ifstream &file)
@@ -84,22 +85,24 @@ std::map<int, ConfigurationServer> Parser::createAllServeur(std::vector<std::str
             throw std::runtime_error("Unknow Attributes " + *it);
     }
     addInfoChildren(config, atributes);
+    std::cout <<  config[8080].getLocation()["/e"].getHttpMethode().size() << std::endl;
+
     return config;
 }
 
 
-void Parser::addInfoChildren(std::map<int, ConfigurationServer> config, Atributes &atributes) {
+void Parser::addInfoChildren(std::map<int, ConfigurationServer> &config, Atributes &atributes) {
     std::map<int, ConfigurationServer>::iterator serverIterator;
     for (serverIterator = config.begin(); serverIterator != config.end(); ++serverIterator) {
         serverIterator->second.fillAtributes(atributes);
-        std::map<std::string, Location>::const_iterator locationIterator = serverIterator->second.getLocation().begin();
+        std::map<std::string, Location>::iterator locationIterator = serverIterator->second.getLocation().begin();
         for (; locationIterator != serverIterator->second.getLocation().end(); ++locationIterator) {
-            Location location = locationIterator->second;
+            Location &location = locationIterator->second;
             location.fillAtributes(serverIterator->second);
-            std::cout << "Location path: " << location.getPath() << std::endl;
-            std::cout << location << std::endl;
+
         }
     }
+
 }
 
 Parser::Parser() {}

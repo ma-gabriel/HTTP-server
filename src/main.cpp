@@ -25,8 +25,10 @@ int main(int argc, char **argv) // no variable for -Werror=unused-parameter
 		Server &server = Server::instance();
 		std::map<int, ConfigurationServer> allServers = parser.ParseFile(argv[1]);
 		signal(SIGINT, sigint_handler);
+		std::cout <<  allServers[8080].getLocation()["/e"].getHttpMethode().size() << std::endl;
+
 		for (std::map<int, ConfigurationServer>::const_iterator it = allServers.begin();
-			it != allServers.end(); ++it) {
+		     it != allServers.end(); ++it) {
 			std::cout << it->second.getPort() << std::endl;
 			epoll.addFd(server.newInstance(it->second), true);
 		}

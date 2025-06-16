@@ -98,7 +98,7 @@ const std::vector<std::string> &ConfigurationServer::getServerNames() const {
     return _serverNames;
 }
 
-const std::map<std::string, Location> &ConfigurationServer::getLocation() const {
+ std::map<std::string, Location> &ConfigurationServer::getLocation(){
     return _location;
 }
 
@@ -142,11 +142,15 @@ int ConfigurationServer::getPort() const {
     return _host;
 }
 
-std::ostream &operator<<(std::ostream &os, const ConfigurationServer &server) {
+std::ostream &operator<<(std::ostream &os, ConfigurationServer &server) {
     os << "server port: " << server.getPort() <<  std::endl;
     os << "server name: " << std::endl;
     for (std::vector<std::string>::const_iterator it = server.getServerNames().begin(); it != server.getServerNames().end(); ++it) {
         os <<  *it << " ";
+    }
+    for (std::map<std::string, Location>::iterator it = server.getLocation().begin(); it != server.getLocation().end(); ++it) {
+        std::cout << std::endl  << "location : " << it->first << std::endl;
+        os <<  it->first << " location Name " << it->second << " ";
     }
     os << static_cast<Atributes>(server);
     return os;

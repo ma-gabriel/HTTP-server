@@ -142,11 +142,14 @@ void Epoll::handleEvents(int sock, Server& serv)
 }
 
 
-void Epoll::handleNewClients(int sock, Server &serv)
-{
+void Epoll::handleNewClients(int sock, Server &serv) {
 	int client_sock = serv.newClient(sock);
-	if (client_sock != -1)
+	if (client_sock != -1) {
 		this->addFd(client_sock, true);
+		this->_fdClientsConfigs[client_sock] = serv.getInstances()[sock];
+		std::cout << "New client connected on socket: " << client_sock << std::endl << std::endl;
+		std::cout << "server client: " << this->_fdClientsConfigs[client_sock] << std::endl << std::endl;
+	}
 }
 
 void Epoll::addFd(int fd, bool in)
@@ -204,8 +207,12 @@ void Epoll::delAndCloseSocket(int sock)
 	if (write)
 		this->_epollWrite.erase(std::remove(this->_epollWrite.begin(), this->_epollWrite.end(), sock), this->_epollWrite.end());
 	Server::instance().delClient(sock);
+	this->_fdClientsConfigs.erase(sock);
 }
 
+std::map<int, ConfigurationServer> Epoll::getFdClientConfigs() const {
+	return this->_fdClientsConfigs;
+}
 // Overloaded print operator
 std::ostream& operator<<(std::ostream& stream, const Epoll& epoll)
 {
