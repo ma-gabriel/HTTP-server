@@ -56,6 +56,7 @@ bool doCGI(const Request &req)
 
 	if (!CGI::checkfileexec(bin) || !CGI::checkfileexec(filePath)){
 		// TODO change macro to better error 403
+		std::cerr << filePath << std::endl;
 		ERROR_403(req.getSock());
 		return true;
 	}

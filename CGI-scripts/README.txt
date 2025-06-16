@@ -3,7 +3,7 @@
 Salut les gens.
 
 Dans la partie CGI pour l'instant il y aura des trucs marqués en brut dans le code,
-par exemple que si ca trouve un code python ca utilise /usr/bin/python3.10
+par exemple que si ca trouve un code python ca utilise /usr/bin/python3
 mais c'est le genre de trucs qui se trouve dans le fichier de config,
 donc ce sera changé plus tard
 

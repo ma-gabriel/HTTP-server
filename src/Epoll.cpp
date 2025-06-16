@@ -140,7 +140,6 @@ void Epoll::handleEvents(int sock, Server& serv)
 		std::cout << "Receiving new request from " << serv.getClientAddress(sock) << std::endl;
 #endif
 		serv.handleRequest(sock);
-		std::cout <<"sock" <<sock;
 		this->delAndCloseSocket(sock);
 	}
 }

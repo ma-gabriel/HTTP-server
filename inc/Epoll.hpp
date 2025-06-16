@@ -46,11 +46,11 @@ public:
     static bool isRunning;
 
 private:
-    std::vector<int> _epollWrite;
     int _fd;
 #ifdef LINUX
     struct epoll_event *_events;
 #else
+    std::vector<int> _epollWrite;
     struct kevent *_events;
 #endif
 // Constructors private

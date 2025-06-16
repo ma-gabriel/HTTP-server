@@ -14,14 +14,13 @@ void sigint_handler(int signum)
 	}
 }
 
-int main(int argc, char **argv) // no variable for -Werror=unused-parameter
+int main(int argc, char **argv)
 {
-	// remove comments + add variable names when configuration file present
 	if (check_args(argc) == false)
 		return (1);
 	try {
 		Epoll &epoll = Epoll::instance();
-		Parser config = Parser(argv[1]);
+		Parser config(argv[1]);
 		Server &server = Server::instance();
 		signal(SIGINT, sigint_handler);
 		for (std::map<int, ConfigurationServer>::const_iterator it = config.getAllServeur().begin();
@@ -35,6 +34,5 @@ int main(int argc, char **argv) // no variable for -Werror=unused-parameter
 		std::cerr << e.what() << std::endl;
 		return (1);
 	}
-
 	return (0);
 }
