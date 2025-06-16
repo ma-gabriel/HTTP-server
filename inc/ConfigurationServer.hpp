@@ -23,15 +23,15 @@ public:
     const std::vector<std::string> &getServerNames() const;
     const std::map<std::string, Location> &getLocation() const;
     ConfigurationServer &operator=(const ConfigurationServer &from);
-    const char *getPortString() const;
+     std::string &getPortString();
 
-    const char *getHost() const;
+     std::string &getHost();
 
 private:
     std::map<std::string, Location>  _location;
     std::vector<std::string>         _serverNames;
-    const char                       *_portString;
-    const char                       *_host;
+    std::string                      _portString;
+    std::string                      _host;
     int                              _port;
     bool addAttributes(std::vector<std::string>::iterator &it, const std::vector<std::string>::iterator &end);
     void addServerName(std::vector<std::string>::iterator &it, int n);

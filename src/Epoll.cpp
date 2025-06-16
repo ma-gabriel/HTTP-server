@@ -123,7 +123,7 @@ void Epoll::routine(Server &serv)
 		}
 	}
 	#endif
-	// serv.routineCGI();
+	serv.routineCGI();
 }
 
 void Epoll::handleEvents(int sock, Server& serv)

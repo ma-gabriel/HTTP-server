@@ -13,7 +13,7 @@ class Parser
 
 private:
     std::string readFile(std::ifstream &file);
-
+    void addInfoChildren(std::map<int, ConfigurationServer> config, Atributes &atributes);
     std::map<int, ConfigurationServer> createAllServeur(std::vector<std::string> &allTokens);
     Parser();
 

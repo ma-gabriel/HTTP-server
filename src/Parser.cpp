@@ -66,6 +66,7 @@ std::vector<std::string> Parser::getAllToken(std::string &str)
     return tokenList;
 }
 
+
 std::map<int, ConfigurationServer> Parser::createAllServeur(std::vector<std::string> &allTokens){
     std::vector<std::string>::iterator it;
     std::vector<std::string>::iterator end = allTokens.end();
@@ -74,13 +75,31 @@ std::map<int, ConfigurationServer> Parser::createAllServeur(std::vector<std::str
     for (it = allTokens.begin(); it != end; ++it) {
         if (*it == "server"){
             ConfigurationServer server(it, allTokens.end());
+            if (config.find(server.getPort()) != config.end()) {
+                throw std::runtime_error("Server with this port : " + server.getPortString() + " already exists.");
+            }
             config[server.getPort()] = server;
         }
-        else
-            atributes.addAttributes(it, end);
-        std::cout << "Number of servers created: " << config.size() << std::endl;
+        else if (!atributes.addAttributes(it, end))
+            throw std::runtime_error("Unknow Attributes " + *it);
     }
+    addInfoChildren(config, atributes);
     return config;
+}
+
+
+void Parser::addInfoChildren(std::map<int, ConfigurationServer> config, Atributes &atributes) {
+    std::map<int, ConfigurationServer>::iterator serverIterator;
+    for (serverIterator = config.begin(); serverIterator != config.end(); ++serverIterator) {
+        serverIterator->second.fillAtributes(atributes);
+        std::map<std::string, Location>::const_iterator locationIterator = serverIterator->second.getLocation().begin();
+        for (; locationIterator != serverIterator->second.getLocation().end(); ++locationIterator) {
+            Location location = locationIterator->second;
+            location.fillAtributes(serverIterator->second);
+            std::cout << "Location path: " << location.getPath() << std::endl;
+            std::cout << location << std::endl;
+        }
+    }
 }
 
 Parser::Parser() {}

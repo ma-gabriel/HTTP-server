@@ -43,6 +43,7 @@ public:
     Atributes &operator=(const Atributes &a);
     virtual ~Atributes();
     virtual bool addAttributes(std::vector<std::string>::iterator &it, const std::vector<std::string>::iterator &end);
+    void fillAtributes(Atributes &atributes);
     const std::string &getRoot() const;
     const std::map<int, std::string> &getErrorPages() const;
     const std::vector<EHttpMethode> &getHttpMethode() const;

@@ -7,14 +7,15 @@
 #include <cstdlib>
 
 
-ConfigurationServer::ConfigurationServer(): Atributes(), _portString(NULL), _host(NULL), _port(0) {
+ConfigurationServer::ConfigurationServer(): Atributes(), _port(0) {
+    // std::cout << "ConfigurationServer default constructor called" << std::endl;
 }
 
 ConfigurationServer::~ConfigurationServer() {
 
 }
 
-ConfigurationServer::ConfigurationServer(std::vector<std::string>::iterator &begin, const std::vector<std::string>::iterator &end): Atributes(), _portString(NULL), _host(NULL), _port(0){
+ConfigurationServer::ConfigurationServer(std::vector<std::string>::iterator &begin, const std::vector<std::string>::iterator &end): Atributes(), _port(0){
     if (++begin == end || *begin != "{")
         throw std::runtime_error("after server is not left brace ");
     while (++begin != end && *begin != "}") {
@@ -29,7 +30,11 @@ ConfigurationServer::ConfigurationServer(std::vector<std::string>::iterator &beg
         else if  (*begin == "}")
             return;
         else if (!this->addAttributes(begin, end)) {
+            throw std::runtime_error("Unknow Attributes " + *begin);
         }
+    }
+    if (begin == end || *begin != "}") {
+        throw std::runtime_error("after server is not right brace ");
     }
     if (begin == end || *begin != "}") {
         throw std::runtime_error("after server is not right brace ");
@@ -53,10 +58,13 @@ bool ConfigurationServer::addAttributes(std::vector<std::string>::iterator &it, 
         addServerName(it, n);
     else
         return false;
+    it++;
     return true;
 }
 
 void ConfigurationServer::addServerName(std::vector<std::string>::iterator &it, int n) {
+    if (!this->getServerNames().empty())
+        std::cout << "Server name already set." << std::endl;
     if (n < 2) {
         throw std::runtime_error("Server name requires at least one name.");
     }
@@ -66,6 +74,9 @@ void ConfigurationServer::addServerName(std::vector<std::string>::iterator &it, 
 }
 
 void ConfigurationServer::addListen(std::vector<std::string>::iterator &it, int n) {
+    if (this->_port != 0) {
+        throw std::runtime_error("Listen attribute already set.");
+    }
     if (n != 3)
         throw std::runtime_error("Server requires an address and a port.");
     this->_host = (*(++it)).c_str();
@@ -91,17 +102,18 @@ const std::map<std::string, Location> &ConfigurationServer::getLocation() const 
     return _location;
 }
 
-const char  *ConfigurationServer::getPortString() const {
+std::string &ConfigurationServer::getPortString() {
     return  this->_portString;
 }
 
 
 
 ConfigurationServer &ConfigurationServer::operator=(const ConfigurationServer &from){
-
+    // std::cout << "ConfigurationServer aftectation operator called" << std::endl;
     // std::cout << GREY << "Epoll '=' overload called" << RESET << std::endl;
     if (this == &from)
         return (*this);
+    Atributes::operator=(from);
     this->_host = from._host;
     this->_port = from._port;
     this->_portString = from._portString;
@@ -114,6 +126,7 @@ ConfigurationServer &ConfigurationServer::operator=(const ConfigurationServer &f
 ConfigurationServer::ConfigurationServer(const ConfigurationServer &from):
 Atributes(from)
 {
+    // std::cout << "ConfigurationServer copy constructor called from port : " << from._portString;
     this->_host = from._host;
     this->_port = from._port;
     this->_serverNames = from._serverNames;
@@ -125,14 +138,16 @@ int ConfigurationServer::getPort() const {
     return _port;
 }
 
-const char *ConfigurationServer::getHost() const {
+ std::string &ConfigurationServer::getHost()  {
     return _host;
 }
 
 std::ostream &operator<<(std::ostream &os, const ConfigurationServer &server) {
+    os << "server port: " << server.getPort() <<  std::endl;
     os << "server name: " << std::endl;
     for (std::vector<std::string>::const_iterator it = server.getServerNames().begin(); it != server.getServerNames().end(); ++it) {
-        os << "\t" << *it;
+        os <<  *it << " ";
     }
+    os << static_cast<Atributes>(server);
     return os;
 }
