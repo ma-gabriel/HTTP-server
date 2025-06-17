@@ -14,6 +14,7 @@
 #include <sys/wait.h>
 
 #include "CGI.hpp"
+#include "Parser.hpp"
 #include "Epoll.hpp"
 #include "Request.hpp"
 #include "Server.hpp"
@@ -42,8 +43,17 @@ bool doCGI(const Request &req)
 	extensions[".php"] = "/usr/bin/php";
 	extensions[".js"] = "/usr/bin/node";
 
+
 	// TODO the second argument is from the config file
+#ifdef LINUX
+	std::string filePath = CGI::getActualPath(req.getPath(), "./CGI-scripts");
+#else
+	// raphaelperrot made that change
+	// I'm gonna need an explanation on why the line above won't work on mac
+	// due to the need to not be hardcoded 
 	std::string filePath = CGI::getActualPath(req.getPath(), "/Users/raphaelperrot/webserv2/CGI-scripts");
+#endif
+	std::cout << filePath << std::endl;
 	std::string bin = CGI::checkExtensions(extensions, filePath);
 	if (bin.empty())
 		return false;
