@@ -194,7 +194,7 @@ void Epoll::delAndCloseSocket(int sock)
 	#else
 	struct kevent change;
 	bool write = std::find(this->_epollWrite.begin(), this->_epollWrite.end(), sock) != this->_epollWrite.end();
-	EV_SET(&change, sock,  (write ? EVFILT_WRITE : EVFILT_READ), EV_DELETE, 0, 0, NULL);
+	EV_SET(&change, sock, (write ? EVFILT_WRITE : EVFILT_READ), EV_DELETE, 0, 0, NULL);
 
 	if (kevent(this->_fd, &change, 1,  NULL, 0, NULL) == -1){
 		perror("kevent add client3");

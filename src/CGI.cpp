@@ -169,37 +169,36 @@ void CGI::childExec(std::map<std::string,std::string> envRaw)
 }
 
 ssize_t CGI::flush(int fd, std::string text){
-	ssize_t total = 0, len;
-	size_t status = text.find("Status: ");
 	size_t body = text.find("\r\n\r\n");
-	size_t length = text.find("Content-Length: ");
-	size_t type = text.find("Content-Type: ");
 	if (body == std::string::npos) {
 		text = static_cast< std::ostringstream & >(( std::ostringstream() << std::dec << \
 			"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: " << text.length() << "\r\n\r\n")).str() + text;
-		goto end_treating;
+
+	} else {
+		size_t status = text.find("Status: ");
+		size_t length = text.find("Content-Length: ");
+		size_t type = text.find("Content-Type: ");
+		if (status != std::string::npos && status < body){
+			std::string status_line = "HTTP/1.1 " + text.substr(status + 8, text.find("\r\n", status) - 8);
+			text.erase(status, text.find("\r\n", status));
+			text = status_line + text;
+		}
+		else text = "HTTP/1.1 200 OK\r\n" + text;
+		if (type == std::string::npos || type > body){
+			text.insert(text.find("\r\n\r\n") + 2, "Content-Type: text/html\r\n");
+		}
+		if (length == std::string::npos || body == std::string::npos || length > body){
+			text.insert(text.find("\r\n\r\n") + 2, static_cast< std::ostringstream & >((std::ostringstream() << std::dec \
+			<< "Content-Length: " << text.length() - text.find("\r\n\r\n") - 4 << "\r\n")).str());
+		}
 	}
-	if (status != std::string::npos && status < body){
-		std::string status_line = "HTTP/1.1 " + text.substr(status + 8, text.find("\r\n", status) - 8);
-		text.erase(status, text.find("\r\n", status));
-		text = status_line + text;
-	}
-	else text = "HTTP/1.1 200 OK\r\n" + text;
-	if (type == std::string::npos || type > body){
-		text.insert(text.find("\r\n\r\n") + 2, "Content-Type: text/html\r\n");
-	}
-	if (length == std::string::npos || body == std::string::npos || length > body){
-		text.insert(text.find("\r\n\r\n") + 2, static_cast< std::ostringstream & >((std::ostringstream() << std::dec \
-		<< "Content-Length: " << text.length() - text.find("\r\n\r\n") - 4 << "\r\n")).str());
-	}
-	end_treating :
-	do {
-		len = send(fd, text.c_str(), text.length(), 0);
+	ssize_t total = 0;
+	while (text.length()) {
+		ssize_t len = send(fd, text.c_str(), text.length(), 0);
 		if (len == -1) return -1;
 		text = text.substr(len);
 		total += len;
 	}
-	while (text.length());
 	return total;
 }
 

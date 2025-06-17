@@ -312,7 +312,7 @@ int Server::newInstance(ConfigurationServer server)
 	std::cout << "Server now listing on " << inet_ntoa(addr.sin_addr) << " port " << port << std::endl;
 #endif
 
-	this->_instances.insert(std::make_pair(sock, server));
+	this->_instances[sock] = server;
 	return(sock);
 }
 
