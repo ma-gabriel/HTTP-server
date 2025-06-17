@@ -43,7 +43,7 @@ bool doCGI(const Request &req)
 	extensions[".js"] = "/usr/bin/node";
 
 	// TODO the second argument is from the config file
-	std::string filePath = CGI::getActualPath(req.getPath(), "./CGI-scripts");
+	std::string filePath = CGI::getActualPath(req.getPath(), "/Users/raphaelperrot/webserv2/CGI-scripts");
 	std::string bin = CGI::checkExtensions(extensions, filePath);
 	if (bin.empty())
 		return false;

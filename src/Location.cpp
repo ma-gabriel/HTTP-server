@@ -8,6 +8,24 @@ Location::~Location() {
 
 }
 
+Location::Location():Atributes(), _path("") {
+    // std::cout << "Location default constructor called" << std::endl;
+}
+
+Location::Location(const Location &location):Atributes(location){
+    this->_path = location._path;
+}
+
+Location &Location::operator=(const Location &location) {
+    if (this != &location) {
+        Atributes::operator=(location);  // Appel opérateur = de la classe parente
+        this->_path = location._path;   // Copier les membres propres
+    }
+    return *this;
+}
+
+
+
 Location::Location(std::vector<std::string>::iterator &it, const std::vector<std::string>::iterator &end){
     if (++it == end)
         throw std::runtime_error("Path of location is the end of file ");
@@ -17,7 +35,8 @@ Location::Location(std::vector<std::string>::iterator &it, const std::vector<std
         throw std::runtime_error("after location : " + this->_path + " is not left brace \n");
     }
     while (++it != end && *it != "}") {
-        this->addAttributes(it, end);
+        if (!this->addAttributes(it, end))
+            throw  std::runtime_error("Unknow Attributes " + *it);
         if (*it == "}")
             return;
     }

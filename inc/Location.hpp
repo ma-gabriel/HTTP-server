@@ -3,9 +3,9 @@
 #define LOCATION_HPP
 
 #include <iostream>
-#include "AAtributes.hpp"
+#include "Atributes.hpp"
 
-class Location : public AAtributes {
+class Location : public Atributes {
 private:
     std::string _path; // Path of the location
     void correctPath();
@@ -13,7 +13,10 @@ private:
 public:
     const std::string &getPath() const;
     void setPath(const std::string &path);
+    Location();
     Location(std::vector<std::string>::iterator &it, const std::vector<std::string>::iterator &end);
+    Location(const Location &location);
+    Location &operator=(const Location &location);
     ~Location();
     class DoubleSlashExceptionLocation : public std::runtime_error {
     public:

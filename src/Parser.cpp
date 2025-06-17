@@ -20,15 +20,18 @@ Parser::~Parser()
 
 }
 
-Parser::Parser(const std::string &config_file): _configFile(config_file)
+std::map<int, ConfigurationServer> Parser::ParseFile(const std::string &config_file)
 {
     std::ifstream file(config_file.c_str());
     if (!file.is_open())
         throw (std::runtime_error("Error: could not open " + config_file));
-    this->readFile(file);
+    std::string fileContent = this->readFile(file);
+    std::vector<std::string> allTokens = getAllToken(fileContent);
+    return createAllServeur(allTokens);
+
 }
 
-void Parser::readFile(std::ifstream &file)
+std::string Parser::readFile(std::ifstream &file)
 {
     std::string line;
     std::string fileContent;
@@ -39,8 +42,8 @@ void Parser::readFile(std::ifstream &file)
         fileContent += line + "\n";
     }
     file.close();
-    std::vector<std::string> allTokens = getAllToken(fileContent);
-    createAllServeur(allTokens);
+    return fileContent;
+
 }
 
 std::vector<std::string> Parser::getAllToken(std::string &str)
@@ -64,31 +67,47 @@ std::vector<std::string> Parser::getAllToken(std::string &str)
     return tokenList;
 }
 
-void Parser::createAllServeur(std::vector<std::string> &allTokens){
+
+std::map<int, ConfigurationServer> Parser::createAllServeur(std::vector<std::string> &allTokens){
     std::vector<std::string>::iterator it;
-    for (it = allTokens.begin(); it != allTokens.end(); ++it) {
+    std::vector<std::string>::iterator end = allTokens.end();
+    Atributes atributes;
+    std::map <int, ConfigurationServer> config;
+    for (it = allTokens.begin(); it != end; ++it) {
         if (*it == "server"){
             ConfigurationServer server(it, allTokens.end());
-            this->_allServeur[server.getPort()] = server;
+            if (config.find(server.getPort()) != config.end()) {
+                throw std::runtime_error("Server with this port : " + server.getPortString() + " already exists.");
+            }
+            config[server.getPort()] = server;
+        }
+        else if (!atributes.addAttributes(it, end))
+            throw std::runtime_error("Unknow Attributes " + *it);
+    }
+    addInfoChildren(config, atributes);
+    std::cout <<  config[8080].getLocation()["/e"].getHttpMethode().size() << std::endl;
+
+    return config;
+}
+
+
+void Parser::addInfoChildren(std::map<int, ConfigurationServer> &config, Atributes &atributes) {
+    std::map<int, ConfigurationServer>::iterator serverIterator;
+    for (serverIterator = config.begin(); serverIterator != config.end(); ++serverIterator) {
+        serverIterator->second.fillAtributes(atributes);
+        std::map<std::string, Location>::iterator locationIterator = serverIterator->second.getLocation().begin();
+        for (; locationIterator != serverIterator->second.getLocation().end(); ++locationIterator) {
+            Location &location = locationIterator->second;
+            location.fillAtributes(serverIterator->second);
+
         }
     }
+
 }
 
-void Parser::ParseFile(std::string &fileContent)
-{
-    (void)fileContent;
-}
+Parser::Parser() {}
 
-const std::string &Parser::getConfigFile() const
-{
-    return _configFile;
-}
-
-void Parser::setConfigFile(const std::string &configFile)
-{
-    _configFile = configFile;
-}
-
-const std::map<int, ConfigurationServer> &Parser::getAllServeur() const {
-    return _allServeur;
+Parser &Parser::instance() {
+    static Parser instance;
+    return instance;
 }

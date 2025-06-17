@@ -20,11 +20,15 @@ int main(int argc, char **argv)
 		return (1);
 	try {
 		Epoll &epoll = Epoll::instance();
-		Parser config(argv[1]);
+		Parser &parser = Parser::instance();
 		Server &server = Server::instance();
+		std::map<int, ConfigurationServer> allServers = parser.ParseFile(argv[1]);
 		signal(SIGINT, sigint_handler);
-		for (std::map<int, ConfigurationServer>::const_iterator it = config.getAllServeur().begin();
-			it != config.getAllServeur().end(); ++it) {
+		std::cout <<  allServers[8080].getLocation()["/e"].getHttpMethode().size() << std::endl;
+
+		for (std::map<int, ConfigurationServer>::const_iterator it = allServers.begin();
+		     it != allServers.end(); ++it) {
+			std::cout << it->second.getPort() << std::endl;
 			epoll.addFd(server.newInstance(it->second), true);
 		}
 		while (Epoll::isRunning)

@@ -4,12 +4,10 @@
 #include <cstdio>
 #include <unistd.h>
 #include <arpa/inet.h>
-#include <fcntl.h>
 #include <algorithm>
 #include <cstring>
 #include <signal.h>
-#include <limits>
-#include <sys/wait.h>
+
 
 #include "Request.hpp"
 #include "Response.hpp"
@@ -287,7 +285,7 @@ int Server::newInstance(ConfigurationServer server)
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;    // IPv4 ou IPv6
 	hints.ai_socktype = SOCK_STREAM; // TCP
-	if (getaddrinfo("0.0.0.0", server.getPortString(), &hints, &result) != 0) {
+	if (getaddrinfo("0.0.0.0", server.getPortString().c_str(), &hints, &result) != 0) {
 		perror("bind");
 		close(sock);
 	}
@@ -366,7 +364,10 @@ void Server::handleRequest(int sock)
 	send(sock, buff.c_str(), buff.length(), 0);
 
 	delete req;
-	return ;
+}
+
+std::map<int, ConfigurationServer> Server::getInstances() const {
+	return this->_instances;
 }
 
 // Overloaded print operator
@@ -374,5 +375,6 @@ std::ostream& operator<<(std::ostream& stream, Server& server)
 {
 	stream << "Server: ";
 	stream << "nbClients -> " << server.getClientNumber();
+
 	return (stream);
 }
