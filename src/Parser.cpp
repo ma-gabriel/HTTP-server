@@ -85,8 +85,6 @@ std::map<int, ConfigurationServer> Parser::createAllServeur(std::vector<std::str
             throw std::runtime_error("Unknow Attributes " + *it);
     }
     addInfoChildren(config, atributes);
-    std::cout <<  config[8080].getLocation()["/e"].getHttpMethode().size() << std::endl;
-
     return config;
 }
 

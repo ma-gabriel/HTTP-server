@@ -148,10 +148,12 @@ void Epoll::handleEvents(int sock, Server& serv)
 void Epoll::handleNewClients(int sock, Server &serv) {
 	int client_sock = serv.newClient(sock);
 	if (client_sock != -1) {
-		this->addFd(client_sock, true);
+		this->addFd(client_sock);
 		this->_fdClientsConfigs[client_sock] = serv.getInstances()[sock];
+#if DEBUG
 		std::cout << "New client connected on socket: " << client_sock << std::endl << std::endl;
 		std::cout << "server client: " << this->_fdClientsConfigs[client_sock] << std::endl << std::endl;
+#endif
 	}
 }
 

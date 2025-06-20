@@ -25,7 +25,7 @@ ConfigurationServer::ConfigurationServer(std::vector<std::string>::iterator &beg
             if (this->_location.find(location.getPath()) != this->_location.end()) {
                 throw std::runtime_error("Location " + location.getPath() + " already exists.");
             }
-            this->_location.insert(std::make_pair(location.getPath(), location));
+            this->_location[location.getPath()] = location;
         }
         else if  (*begin == "}")
             return;

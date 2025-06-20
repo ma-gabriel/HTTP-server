@@ -137,7 +137,7 @@ void Atributes::addCgi(std::vector<std::string>::iterator &it, int n) {
    }
    std::vector<std::string> cgi;
     for (int i = 1; i < n; ++i) {
-         cgi.push_back(*(++it));
+        cgi.push_back(*(++it));
     }
     this->_cgi = cgi;
 }
@@ -259,8 +259,8 @@ void Atributes::fillAtributes(Atributes &atributes) {
         this->_autoIndex = atributes._autoIndex;
     if (this->_maxBodySize == 0)
         this->_maxBodySize = atributes._maxBodySize;
-    if (this->_cgi.empty() == 0)
+    if (this->_cgi.empty())
         this->_cgi = atributes._cgi;
-    if (this->_index.empty() != 0)
+    if (this->_index.empty())
         this->_index = atributes._index;
 }

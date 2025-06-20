@@ -2,25 +2,25 @@
 # define EPOLL_HPP
 
 # include <ostream>
-#ifdef LINUX
-# include <sys/epoll.h>
-#else
-# include <sys/fcntl.h>
-# include <sys/event.h>
-# include <sys/time.h>
-#endif
-#include <sys/types.h>
-#include <unistd.h>
-#include <vector>
-#include <stdio.h>
-#include <map>
-#include <utility>
-#include <ctime>
-#include <ConfigurationServer.hpp>
+# ifdef LINUX
+#  include <sys/epoll.h>
+# else
+#  include <sys/fcntl.h>
+#  include <sys/event.h>
+#  include <sys/time.h>
+# endif
+# include <sys/types.h>
+# include <unistd.h>
+# include <vector>
+# include <stdio.h>
+# include <map>
+# include <utility>
+# include <ctime>
+# include <ConfigurationServer.hpp>
 
-#include "Server.hpp"
+# include "Server.hpp"
 
-#define MAXEVENT 64
+# define MAXEVENT 64
 
 class Epoll
 {
@@ -40,7 +40,7 @@ public:
     void routine(Server& serv);
     void handleEvents(int sock, Server& serv);
     void handleNewClients(int sock, Server& serv) ;
-    void addFd(int fd, bool in) ;
+    void addFd(int fd, bool in = true) ;
     void delAndCloseSocket(int sock);
     std::map<int, ConfigurationServer> getFdClientConfigs() const;
 

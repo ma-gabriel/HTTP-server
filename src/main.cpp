@@ -29,7 +29,7 @@ int main(int argc, char **argv)
 		for (std::map<int, ConfigurationServer>::const_iterator it = allServers.begin();
 		     it != allServers.end(); ++it) {
 			std::cout << it->second.getPort() << std::endl;
-			epoll.addFd(server.newInstance(it->second), true);
+			epoll.addFd(server.newInstance(it->second));
 		}
 		while (Epoll::isRunning)
 				epoll.routine(Server::instance());

@@ -354,6 +354,7 @@ void Server::handleRequest(int sock)
 		return ;
 	}
 
+
 	if (doCGI(*req) == true){
 		delete req;
 		return ;

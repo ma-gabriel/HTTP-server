@@ -21,7 +21,8 @@
 
 static inline bool endsWith(const std::string &, const std::string &);
 static std::string to_upper(std::string src);
-
+static std::map<std::string, Location>::iterator decide_location(std::map<std::string, Location> &dict, std::string path);
+static std::map<std::string, std::string> decompose_cgi(std::vector<std::string> cgis);
 
 CGI::CGI(){
 	_toCGI[0] = _toCGI[1] = \
@@ -39,21 +40,32 @@ bool doCGI(const Request &req)
 	//TODO need to be in the config files
 	// subject : "Execute CGI based on certain file extension (for example .php)."
 	std::map<std::string, std::string> extensions;
-	extensions[".py"] = "/usr/bin/python3";
-	extensions[".php"] = "/usr/bin/php";
-	extensions[".js"] = "/usr/bin/node";
 
+	Location config;
+	{ 
+		std::map<std::string, Location> dict = Epoll::instance().getFdClientConfigs()[req.getSock()].getLocation();
+		std::map<std::string, Location>::iterator dict_iterator = decide_location(dict, req.getPath());
+		
+		if (dict_iterator == dict.end())
+			return false;
+		config = dict_iterator->second;
+	}
 
-	// TODO the second argument is from the config file
+	std::string filePath = req.getPath().substr(req.getPath().find('/', 1));
+
 #ifdef LINUX
-	std::string filePath = CGI::getActualPath(req.getPath(), "./CGI-scripts");
+	filePath = CGI::getActualPath(filePath, config.getRoot());
 #else
 	// raphaelperrot made that change
 	// I'm gonna need an explanation on why the line above won't work on mac
 	// due to the need to not be hardcoded 
-	std::string filePath = CGI::getActualPath(req.getPath(), "/Users/raphaelperrot/webserv2/CGI-scripts");
+	filePath = CGI::getActualPath(req.getPath(), "/Users/raphaelperrot/webserv2/CGI-scripts");
 #endif
-	std::cout << filePath << std::endl;
+	try {
+		extensions = decompose_cgi(config.getCgi());
+	} catch(...){
+		return false;
+	}
 	std::string bin = CGI::checkExtensions(extensions, filePath);
 	if (bin.empty())
 		return false;
@@ -70,17 +82,18 @@ bool doCGI(const Request &req)
 		ERROR_403(req.getSock());
 		return true;
 	}
-	CGI::launch(req, bin, filePath);
+	CGI::launch(req, bin, filePath, config);
 	return true;
 }
 
-void CGI::launch(const Request &req, const std::string &binPath, std::string filePath)
+void CGI::launch(const Request &req, const std::string &binPath, std::string filePath, Location &config)
 {
 	CGI handle;
 
 	handle._body = req.getBody();
 	handle._query = CGI::getQuery(req.getPath());
 	handle._binPath = binPath;
+	handle._config = config;
 	handle._socket = dup(req.getSock());
 	if (handle._socket == -1) {
 		ERROR_500(handle._socket);
@@ -263,7 +276,13 @@ static inline bool endsWith(const std::string& fullString, const std::string& en
  */
 std::string CGI::checkExtensions(std::map<std::string,std::string> extensions, const std::string &path){
 	for (std::map<std::string,std::string>::iterator it = extensions.begin(); it != extensions.end(); it++)
+	{
 		if (endsWith(path, it->first) && path != it->first) return it->second;
+		size_t ext = 0;
+		do ext = path.find(it->first + "/", ext);
+		while (ext != std::string::npos && path[ext - 1] == '/');
+		if (ext != std::string::npos) return it->second;
+	}
 	return std::string();
 }
 
@@ -336,4 +355,23 @@ void CGI::deleteEnvCGI(char **env){
  */
 void CGI::deleteArgvCGI(char **env){
 	deleteEnvCGI(env);
+}
+
+
+static std::map<std::string, Location>::iterator decide_location(std::map<std::string, Location> &dict, std::string path)
+{
+	if (path.find('/', 1) != std::string::npos)
+		path = path.substr(0, path.find('/', 1));
+	return dict.find(path);
+}
+
+static std::map<std::string, std::string> decompose_cgi(std::vector<std::string> cgis){
+	std::map<std::string, std::string> res;
+	for (std::vector<std::string>::iterator it = cgis.begin(); it != cgis.end(); it++){
+		size_t sep = (*it).find(':');
+		if (sep == std::string::npos)
+			throw ("random bullshit let's gooooooo");
+		res[(*it).substr(0, sep)] = (*it).substr(sep + 1);
+	}
+	return res;
 }

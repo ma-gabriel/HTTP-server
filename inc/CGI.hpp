@@ -4,6 +4,7 @@
 # include <string>
 # include <map>
 # include "Request.hpp"
+# include "Location.hpp"
 
 class CGI
 {
@@ -14,6 +15,8 @@ class CGI
         std::string _fileLocation;
         std::string _fileName;
         std::string _body;
+
+        Location _config;
 
         int _toCGI[2];
         int _fromCGI[2];
@@ -42,7 +45,7 @@ class CGI
         static bool checkfileexec(const std::string &file);
         static std::string checkExtensions(std::map<std::string,std::string> extensions, const std::string &path);
 
-        static void launch(const Request &req, const std::string &binPath, std::string filePath);
+        static void launch(const Request &req, const std::string &binPath, std::string filePath, Location &config);
         static ssize_t flush(int fd, std::string text);
 };
 
