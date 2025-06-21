@@ -66,10 +66,11 @@ bool doCGI(const Request &req)
 	} catch(...){
 		return false;
 	}
+
+
 	std::string bin = CGI::checkExtensions(extensions, filePath);
 	if (bin.empty())
 		return false;
-
 	if (!CGI::checkfilepresence(bin) || !CGI::checkfilepresence(filePath)){
 		// TODO change macro to better error 404
 		ERROR_404(req.getSock());
@@ -78,7 +79,6 @@ bool doCGI(const Request &req)
 
 	if (!CGI::checkfileexec(bin) || !CGI::checkfileexec(filePath)){
 		// TODO change macro to better error 403
-		std::cerr << filePath << std::endl;
 		ERROR_403(req.getSock());
 		return true;
 	}
@@ -90,6 +90,7 @@ void CGI::launch(const Request &req, const std::string &binPath, std::string fil
 {
 	CGI handle;
 
+	handle._pathInfo = CGI::getPathInfo(req.getPath(), decompose_cgi(config.getCgi()));
 	handle._body = req.getBody();
 	handle._query = CGI::getQuery(req.getPath());
 	handle._binPath = binPath;
@@ -100,7 +101,7 @@ void CGI::launch(const Request &req, const std::string &binPath, std::string fil
 		return ;
 	}
 	handle._fileLocation = filePath.substr(0, filePath.find_last_of('/'));
-	handle._binName = binPath.find('/') ? binPath.substr(binPath.find_last_of('/')) : binPath;
+	handle._binName = binPath.find('/') != std::string::npos ? binPath.substr(binPath.find_last_of('/')) : binPath;
 	handle._fileName = filePath.substr(filePath.find_last_of('/') + 1);
 	if (pipe(handle._toCGI) || pipe(handle._fromCGI)) {
 		close(handle._toCGI[0]); close(handle._toCGI[1]);
@@ -119,8 +120,11 @@ void CGI::launch(const Request &req, const std::string &binPath, std::string fil
 		close(handle._socket);
 		return ;
 	}
-	if (pid == 0)
-		handle.childExec(req.getHeaders());
+	if (pid == 0){
+		std::map<std::string,std::string> env = req.getHeaders();
+		handle.add_headers(env, req);
+		handle.childExec(env);
+	}
 	else
 		handle.parentHandling(pid);
 }
@@ -150,18 +154,21 @@ void CGI::parentHandling(pid_t pid)
 		close(_socket);
 		return ;
 	}
-	//if this one fails (like kernel error) the CGI won't have a body, at worst, time-out
+	//if this one fails (like kernel error) the CGI won't have access to the body of the request
 	Server::instance().addCGI(_toCGI[1], generate(std::time(NULL), -1, -1, _body),  false);
+
 	//TODO change macro to error 500
 	if (!Server::instance().addCGI(_fromCGI[0], generate(std::time(NULL), pid, _socket, ""), true)){
 		kill(pid, SIGKILL);
+		close(_fromCGI[0]);
+		close(_toCGI[1]);
 		ERROR_500(_socket);
 		close(_socket);
 		return ;
 	}
 }
 
-void CGI::childExec(std::map<std::string,std::string> envRaw)
+void CGI::childExec(std::map<std::string,std::string> &envRaw)
 {
 	bool tmp = dup2(_toCGI[0], 0) == -1 || dup2(_fromCGI[1], 1) == -1;
 	close(_toCGI[0]);
@@ -174,9 +181,6 @@ void CGI::childExec(std::map<std::string,std::string> envRaw)
 	}
 	close(_fromCGI[1]);
 
-	// not to remove, according to https://datatracker.ietf.org/doc/html/rfc3875#section-4.1.7
-	// the server need this flag even if empty
-	envRaw["QUERY_STRING"] = _query;
 	char **env = createEnvCGI(envRaw);
 	char **argv = createArgvCGI(_binName, _fileName);
 
@@ -255,8 +259,24 @@ bool CGI::checkfilepresence(const std::string &file){
 }
 
 std::string CGI::getQuery(const std::string &address){
-	return address.find("?") == std::string::npos ? std::string() : address.substr(0, address.find("?"));
+	return address.find("?") == std::string::npos ? std::string() : address.substr(address.find("?") + 1);
 }
+
+
+std::string CGI::getPathInfo(std::string address, std::map<std::string,std::string> extensions){
+	size_t len = address.find("?");
+		if (len != std::string::npos) address.erase(len);
+	for (std::map<std::string,std::string>::iterator it = extensions.begin(); it != extensions.end(); it++)
+	{
+		size_t ext = 0;
+		do ext = address.find(it->first + "/", ext);
+		while (ext != std::string::npos && address[ext - 1] == '/');
+		if (ext != std::string::npos) return address.substr(ext + it->first.length() + 1);
+		if (endsWith(address, it->first) && address != it->first) return std::string();
+	}
+	return std::string();
+}
+
 
 /** 
  * @param fullString the string to check
@@ -274,16 +294,23 @@ static inline bool endsWith(const std::string& fullString, const std::string& en
  * @param path path or file to check 
  * @return second value from the map if found, empty string if not
  */
-std::string CGI::checkExtensions(std::map<std::string,std::string> extensions, const std::string &path){
+std::string CGI::checkExtensions(std::map<std::string,std::string> extensions, std::string &path){
 	for (std::map<std::string,std::string>::iterator it = extensions.begin(); it != extensions.end(); it++)
 	{
 		if (endsWith(path, it->first) && path != it->first) return it->second;
 		size_t ext = 0;
 		do ext = path.find(it->first + "/", ext);
 		while (ext != std::string::npos && path[ext - 1] == '/');
-		if (ext != std::string::npos) return it->second;
+		if (ext != std::string::npos) {
+			path.erase(ext + it->first.length());
+			return it->second;
+		}
 	}
 	return std::string();
+}
+
+static char bettertoupper(char c){
+	return c == '-' ? '_' : std::toupper(c);
 }
 
 /**
@@ -293,11 +320,27 @@ std::string CGI::checkExtensions(std::map<std::string,std::string> extensions, c
  * @return new string
  */
 static std::string to_upper(std::string src) {
-    std::transform(src.begin(), src.end(), src.begin(), static_cast<int(*)(int)>(std::toupper));
+    std::transform(src.begin(), src.end(), src.begin(), bettertoupper);
     return src;
 }
 
-// execve("/usr/bin/php-cgi", { "php-cgi", "/index.php", NULL}, envp);
+void CGI::add_headers(std::map<std::string,std::string> &env, const Request &req)
+{
+	std::map<std::string,std::string> new_env;
+    for (std::map<std::string, std::string>::iterator it = env.begin(); it != env.end(); ++it) {
+        std::string first = to_upper(it->first);
+        first.insert(0, "HTTP_");
+        new_env[first] = it->second;
+    }
+    env = new_env;
+	env["SERVER_PROTOCOL"] = req.getVersion();
+	env["REQUEST_METHOD"] = req.getMethod();
+	env["QUERY_STRING"] = _query;
+	env["PATH_INFO"] = _pathInfo;
+	env["SCRIPT_NAME"] = _fileLocation + "/" + _fileName;
+	env["GATEWAY_INTERFACE"] = "CGI/1.1";
+};
+
 
 /**
  * create the argv of the CGI 
@@ -328,7 +371,7 @@ char	**CGI::createEnvCGI(std::map<std::string, std::string> headers){
 	char **env = new char*[headers.size() + 1];
 	size_t i = 0;
 	for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++){
-		std::string line = to_upper(it->first) + "=" + it->second;
+		std::string line = it->first + "=" + it->second;
 		env[i] = new char[line.length() + 1];
 		std::memcpy(env[i++], line.c_str(), line.length() + 1);
 	}

@@ -83,6 +83,10 @@ std::string Request::getPath(void) const
 	return(this->_path);
 }
 
+std::string Request::getMethod(void) const
+{
+	return(this->_method);
+}
 
 std::map<std::string, std::string> Request::getHeaders(void) const
 {
