@@ -329,7 +329,9 @@ void CGI::add_headers(std::map<std::string,std::string> &env, const Request &req
 	std::map<std::string,std::string> new_env;
     for (std::map<std::string, std::string>::iterator it = env.begin(); it != env.end(); ++it) {
         std::string first = to_upper(it->first);
-        first.insert(0, "HTTP_");
+		// following if is according to the CGI 1.1 norm
+		if (first != "CONTENT_TYPE" && first != "CONTENT_LENGTH")
+        	first.insert(0, "HTTP_");
         new_env[first] = it->second;
     }
     env = new_env;

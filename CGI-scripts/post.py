@@ -7,7 +7,7 @@ import sys
 print("Content-Type: text/plain\n")
 
 # Get Content-Length from environment
-length = os.environ.get("HTTP_CONTENT_LENGTH")
+length = os.environ.get("CONTENT_LENGTH")
 if length:
     length = int(length)
     body = sys.stdin.read(length)
