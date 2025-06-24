@@ -214,7 +214,7 @@ bool Request::isValid()
 		return false; //because headers not finished
 	if (_raw.find("Content-Length: ") == std::string::npos)
 		return true; //because nothing useful after \r\n\r\n
-	if ((long) (_raw.length() - _raw.find("\r\n\r\n")) >= std::atol(_raw.c_str() + _raw.find("Content-Length: ") + 17))
+	if ((long) (_raw.length() - _raw.find("\r\n\r\n")) >= std::atol(_raw.c_str() + _raw.find("Content-Length: ") + 16))
 		return true;
 	return false;
 
