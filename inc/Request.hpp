@@ -5,6 +5,7 @@
 
 # include <string>
 # include <map>
+# include <ctime>
 
 #ifdef DEBUG
 #endif
@@ -26,11 +27,14 @@ public:
     std::string getVersion(void) const;
     std::string getPath(void) const;
     std::string getBody(void) const;
+    time_t getTime(void) const;
     std::string getMethod(void) const;
     std::map<std::string, std::string> getHeaders(void) const;
     // Setters
     // Public member functions
     void parseRequest(void);
+    void read(void);
+    bool isValid(void);
     // Public exception
     class BadRequestException : public std::exception
     {
@@ -44,8 +48,8 @@ public:
     };
 
 private:
-    // Private constructors
     Request(void);
+    // Private constructors
     // Private member functions
     void parseFirstLine(void);
     void checkFirstLine(void);
@@ -61,6 +65,7 @@ private:
     std::string	_version;
     std::map<std::string, std::string> _headers;
     std::string	_body;
+    std::time_t _time;
 
 };
 

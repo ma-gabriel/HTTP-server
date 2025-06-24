@@ -3,6 +3,7 @@
 #include <iostream>
 #include <sstream>
 #include <unistd.h>
+#include <cstdlib>
 #include <errno.h>
 #include <stdio.h>
 #include <sstream>
@@ -22,20 +23,29 @@ Request::Request(void)
 	return;
 }
 
-Request::Request(int sock) : _sock(sock)
+Request::Request(int sock) : _sock(sock), _time(std::time(NULL))
 {
 	char buff[8192];
-	int readed;
-
-	while ((readed = recv(this->_sock, buff, sizeof(buff) - 1, MSG_DONTWAIT)) != -1){
-		buff[readed] = '\0';
-		this->_raw += buff;
-	}
+	int val = recv(this->_sock, buff, sizeof(buff) - 1, MSG_DONTWAIT);
+	if (val == -1)
+		return ;
+	buff[val] = 0;
+	_raw += buff;
 
 #ifdef DEBUG
 	std::cout << this->_raw << std::endl;
 #endif
 
+}
+
+void Request::read()
+{
+	char buff[8192];
+	int val = recv(this->_sock, buff, sizeof(buff) - 1, MSG_DONTWAIT);
+	if (val == -1)
+		return ;
+	buff[val] = 0;
+	_raw += buff;
 }
 
 Request::Request(const Request &from)
@@ -58,6 +68,14 @@ Request& Request::operator=(const Request &from)
 	// std::cout << GREY << "Request '=' overload called" << RESET << std::endl;
 	if (this != &from)
 	{
+		_sock = from._sock;
+		_raw = from._raw;
+		_method = from._method;
+		_path = from._path;
+		_version = from._version;
+		_headers = from._headers;
+		_body = from._body;
+		_time = from._time;
 	}
 	return (*this);
 }
@@ -66,6 +84,11 @@ Request& Request::operator=(const Request &from)
 int Request::getSock(void) const
 {
 	return(this->_sock);
+}
+
+std::time_t Request::getTime(void) const
+{
+	return(this->_time);
 }
 
 std::string Request::getBody(void) const
@@ -184,3 +207,15 @@ std::string getMethodString(EHttpMethode method) {
 		default: return "UNKNOWN";
 	}
 };
+
+bool Request::isValid()
+{
+	if (_raw.find("\r\n\r\n") == std::string::npos)
+		return false; //because headers not finished
+	if (_raw.find("Content-Length: ") == std::string::npos)
+		return true; //because nothing useful after \r\n\r\n
+	if ((long) (_raw.length() - _raw.find("\r\n\r\n")) >= std::atol(_raw.c_str() + _raw.find("Content-Length: ") + 17))
+		return true;
+	return false;
+
+}

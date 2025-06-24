@@ -18,6 +18,7 @@
 # include <map>
 # include <ctime>
 # include "CGI.hpp"
+# include "Request.hpp"
 
 class ConfigurationServer;
 class Epoll;
@@ -46,7 +47,9 @@ public:
 	int newClient(int sock);
 	void handleRequest(int sock);
 	void handleNewClients(Epoll& epoll, int socket);
+	bool createRequests(int fd);
 	std::map<int, ConfigurationServer> getInstances() const;
+	void routineReq();
 
 	// CGI handlers
 #ifdef LINUX
@@ -69,6 +72,7 @@ private:
 	std::map<int, CGI::infos> _CGIs;
 	std::map<int, ConfigurationServer> _instances;
 	std::deque<int> _clients;
+	std::map<int, Request> _requests;
 
 #ifdef DEBUG
 	std::map<int, char*> _clients_debug;

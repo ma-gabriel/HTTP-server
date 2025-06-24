@@ -38,7 +38,7 @@ public:
 #endif
 // Public member functions
     void routine(Server& serv);
-    void handleEvents(int sock, Server& serv);
+    void handleEvents(int sock);
     void handleNewClients(int sock, Server& serv) ;
     void addFd(int fd, bool in = true) ;
     void delAndCloseSocket(int sock);

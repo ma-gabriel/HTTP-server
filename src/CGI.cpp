@@ -149,17 +149,21 @@ void CGI::parentHandling(pid_t pid)
 		close(_fromCGI[0]);
 		close(_toCGI[1]);
 		kill(pid, SIGKILL);
+		waitpid(pid, NULL, 0);
 		//TODO change macro to error 500
 		ERROR_500(_socket);
 		close(_socket);
 		return ;
 	}
 	//if this one fails (like kernel error) the CGI won't have access to the body of the request
-	Server::instance().addCGI(_toCGI[1], generate(std::time(NULL), -1, -1, _body),  false);
-
+	if (_body.length() > 0)
+		Server::instance().addCGI(_toCGI[1], generate(std::time(NULL), -1, -1, _body),  false);
+	else
+		close(_toCGI[1]);
 	//TODO change macro to error 500
 	if (!Server::instance().addCGI(_fromCGI[0], generate(std::time(NULL), pid, _socket, ""), true)){
 		kill(pid, SIGKILL);
+		waitpid(pid, NULL, 0);
 		close(_fromCGI[0]);
 		close(_toCGI[1]);
 		ERROR_500(_socket);
@@ -329,7 +333,7 @@ void CGI::add_headers(std::map<std::string,std::string> &env, const Request &req
 	std::map<std::string,std::string> new_env;
     for (std::map<std::string, std::string>::iterator it = env.begin(); it != env.end(); ++it) {
         std::string first = to_upper(it->first);
-		// following if is according to the CGI 1.1 norm
+		// following "if" is according to the CGI 1.1 norm
 		if (first != "CONTENT_TYPE" && first != "CONTENT_LENGTH")
         	first.insert(0, "HTTP_");
         new_env[first] = it->second;

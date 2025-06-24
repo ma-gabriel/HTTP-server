@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <algorithm>
+#include <sys/wait.h>
 #include <cstring>
 #include <signal.h>
 
@@ -57,6 +58,7 @@ Server::~Server(void)
 			if (it->second.pid) {
 				close(it->second.output_fd);
 				kill(it->second.pid, SIGKILL);
+				waitpid(it->second.pid, NULL, 0);
 			}
 		}
 	}
@@ -185,6 +187,7 @@ void Server::handleCGI(epoll_event event)
 			delFD(fd);
 			close(infos.output_fd);
 			kill(infos.pid, SIGKILL);
+			waitpid(infos.pid, NULL, 0);
 			_CGIs.erase(fd);
 		}
 	}
@@ -226,6 +229,7 @@ void Server::handleCGI(struct kevent kev)
 			delFD(fd);
 			close(infos.output_fd);
 			kill(infos.pid, SIGKILL);
+			waitpid(infos.pid, NULL, 0);
 			_CGIs.erase(fd);
 		}
 	}
@@ -239,10 +243,26 @@ bool Server::isCGI(int fd) const
 	return (false);
 }
 
+void Server::routineReq()
+{
+	std::vector <int> to_remove;
+	for (std::map<int, Request>::iterator it = _requests.begin(); it != _requests.end(); it++){
+		if (it->second.getTime() + 3 < std::time(NULL)){
+			to_remove.push_back(it->first);
+		}
+	}
+	for (std::vector<int>::iterator it = to_remove.begin(); it != to_remove.end(); ++it){
+		// TODO the usual, probably gonna need to add the ConfigurationServer associated in the map
+		write(*it, "HTTP/1.1 504 Gateway Timeout\r\nContent-Type: text/html;\r\n\r\n<!doctype html>\n<head>\n  <title>504 Gateway Timeout</title>\n</head>\n<body>\n  <h1>Gateway timeout</h1>\n  <p>The server did not respond in time. Please try again later.</p>\n</body></html>", 244);
+		delFD(*it);
+		_requests.erase(*it);
+	}
+}
 
 void Server::routineCGI()
 {
-	for (std::map<int, CGI::infos>::iterator it = _CGIs.begin(); it != _CGIs.end();){
+	std::vector <int> to_remove;
+	for (std::map<int, CGI::infos>::iterator it = _CGIs.begin(); it != _CGIs.end(); it++){
 		if (it->second.timestamp + 15 < std::time(NULL)){
 			if (it->second.pid != -1) {
 				// means it's the output of the CGI
@@ -250,12 +270,24 @@ void Server::routineCGI()
 				write(it->second.output_fd, "HTTP/1.1 504 Gateway Timeout\r\nContent-Type: text/html;\r\n\r\n<!doctype html>\n<head>\n  <title>504 Gateway Timeout</title>\n</head>\n<body>\n  <h1>Gateway timeout</h1>\n  <p>The server did not respond in time. Please try again later.</p>\n</body></html>", 244);
 				close(it->second.output_fd);
 				kill(it->second.pid, SIGKILL);
+				waitpid(it->second.pid, NULL, 0);
 			}
 			delFD(it->first);
-			_CGIs.erase(it++);
 		}
-		else it++;
 	}
+	for (std::vector<int>::iterator it = to_remove.begin(); it != to_remove.end(); ++it){
+		_CGIs.erase(*it);
+	}
+}
+
+bool Server::createRequests(int fd)
+{
+	std::map<int, Request>::iterator it = _requests.find(fd);
+	if (it == _requests.end())
+		_requests.insert(std::make_pair(fd, Request(fd)));
+	else
+		it->second.read();
+	return (_requests.at(fd).isValid());
 }
 
 // Public member functions
@@ -339,10 +371,9 @@ int Server::newClient(int sock)
 
 void Server::handleRequest(int sock)
 {
-	Request *req = new Request(sock);
-
+	Request &req = _requests.at(sock);
 	try {
-		req->parseRequest();
+		req.parseRequest();
 	}
 	catch (Request::BadRequestException &e) {
 		Response::sendBadRequest(sock, e.what());
@@ -350,21 +381,21 @@ void Server::handleRequest(int sock)
 		std::cout << "Exception: Bad request: ";
 		std::cout << e.what() << std::endl;
 #endif
-		delete req;
+		_requests.erase(sock);
 		return ;
 	}
 
 
-	if (doCGI(*req) == true){
-		delete req;
+	if (doCGI(req) == true){
+		_requests.erase(sock);
 		return ;
 	}
 
-	Response resp(req);
+	Response resp(&req);
 	std::string buff = resp.createResponse();
 	send(sock, buff.c_str(), buff.length(), 0);
 
-	delete req;
+	_requests.erase(sock);
 }
 
 std::map<int, ConfigurationServer> Server::getInstances() const {

@@ -93,9 +93,9 @@ void Epoll::routine(Server &serv)
 	int event_quant;
 
 	event_quant = epoll_wait(this->_fd, this->_events, MAXEVENT, 1000);
-	// once a sec, checks that CGI don't timeout (err 504)
-	if (event_quant == -1 && errno != EINTR){	// won't write when close by ^C,
-		perror("epoll_wait"); 					// due to same errno value than timeout
+	// once a sec, checks thatno timeout (err 504)
+	if (event_quant == -1 && errno != EINTR){
+		perror("epoll_wait");
 	}
 	for (int i = 0; i < event_quant; i++)
 	{
@@ -103,8 +103,9 @@ void Epoll::routine(Server &serv)
 			serv.handleCGI(this->_events[i]);
 		else if (!(this->_events[i].events & EPOLLIN))
 			this->delAndCloseSocket(this->_events[i].data.fd);
-		else
-			this->handleEvents(this->_events[i].data.fd, serv);
+		else {
+			this->handleEvents(this->_events[i].data.fd);
+		}
 	}
     #else
 	int eventKqueue;
@@ -127,18 +128,21 @@ void Epoll::routine(Server &serv)
 		}
 	}
 	#endif
+	serv.routineReq();
 	serv.routineCGI();
 }
 
-void Epoll::handleEvents(int sock, Server& serv)
+void Epoll::handleEvents(int sock)
 {
+	Server &serv = Server::instance();
 	if (serv.isServSocket(sock) == true)
 		this->handleNewClients(sock, serv);
-	else
+	else if (serv.createRequests(sock))		
 	{
 #ifdef DEBUG
 		std::cout << "Receiving new request from " << serv.getClientAddress(sock) << std::endl;
 #endif
+
 		serv.handleRequest(sock);
 		this->delAndCloseSocket(sock);
 	}
