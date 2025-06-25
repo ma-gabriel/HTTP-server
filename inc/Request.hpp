@@ -10,7 +10,9 @@
 #ifdef DEBUG
 #endif
 
-#include <iostream>
+# include <iostream>
+# include "EHttpMethodeEnum.hpp"
+# include "Location.hpp"
 
 class Request
 {
@@ -29,6 +31,7 @@ public:
     std::string getBody(void) const;
     time_t getTime(void) const;
     std::string getMethod(void) const;
+    Location *getConfig(void) const;
     std::map<std::string, std::string> getHeaders(void) const;
     // Setters
     // Public member functions
@@ -66,18 +69,9 @@ private:
     std::map<std::string, std::string> _headers;
     std::string	_body;
     std::time_t _time;
-
+    Location *_config;
 };
 
 std::ostream& operator<<(std::ostream& stream, const Request& instance);
 
-enum EHttpMethode
-{
-    Post,
-    Get,
-    Delete,
-    Put
-};
-
-std::string getMethodString(EHttpMethode method);
 #endif

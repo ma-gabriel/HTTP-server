@@ -99,13 +99,14 @@ void Epoll::routine(Server &serv)
 	}
 	for (int i = 0; i < event_quant; i++)
 	{
-		if (serv.isCGI(this->_events[i].data.fd) == true)
+		if (serv.isCGI(this->_events[i].data.fd) == true) {
 			serv.handleCGI(this->_events[i]);
-		else if (!(this->_events[i].events & EPOLLIN))
-			this->delAndCloseSocket(this->_events[i].data.fd);
-		else {
-			this->handleEvents(this->_events[i].data.fd);
+			continue;
 		}
+		if (!(this->_events[i].events & EPOLLIN) && !(this->_events[i].events & EPOLLOUT))
+			this->delAndCloseSocket(this->_events[i].data.fd);
+		else
+			this->handleEvents(this->_events[i].data.fd);
 	}
     #else
 	int eventKqueue;
@@ -142,9 +143,9 @@ void Epoll::handleEvents(int sock)
 #ifdef DEBUG
 		std::cout << "Receiving new request from " << serv.getClientAddress(sock) << std::endl;
 #endif
-
 		serv.handleRequest(sock);
-		this->delAndCloseSocket(sock);
+		serv.getRequests().erase(sock);
+		delAndCloseSocket(sock);
 	}
 }
 
@@ -173,7 +174,7 @@ void Epoll::addFd(int fd, bool in)
 
 	if (epoll_ctl(this->_fd, EPOLL_CTL_ADD, fd, &event) == -1)
 	{
-		perror("epoll_ctl");
+		perror("epoll_ctl (add)");
 		return;
 	}
 	#else
@@ -197,7 +198,7 @@ void Epoll::delAndCloseSocket(int sock)
 	#ifdef LINUX
 	if (epoll_ctl(this->_fd, EPOLL_CTL_DEL, sock, NULL) == -1)
 	{
-		perror("epoll_ctl");
+		perror("epoll_ctl (del)");
 		return;
 	}
 	#else
@@ -219,7 +220,7 @@ void Epoll::delAndCloseSocket(int sock)
 	this->_fdClientsConfigs.erase(sock);
 }
 
-std::map<int, ConfigurationServer> Epoll::getFdClientConfigs() const {
+std::map<int, ConfigurationServer> &Epoll::getFdClientConfigs() {
 	return this->_fdClientsConfigs;
 }
 // Overloaded print operator

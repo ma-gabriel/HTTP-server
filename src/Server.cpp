@@ -84,6 +84,12 @@ Server& Server::operator=(const Server &from)
 	return (*this);
 }
 
+
+std::map<int, Request> &Server::getRequests()
+{
+	return _requests;
+}
+
 // Getters
 int Server::getSocketFromPort(short port)
 {
@@ -282,12 +288,32 @@ void Server::routineCGI()
 
 bool Server::createRequests(int fd)
 {
+	try {
 	std::map<int, Request>::iterator it = _requests.find(fd);
 	if (it == _requests.end())
 		_requests.insert(std::make_pair(fd, Request(fd)));
 	else
 		it->second.read();
 	return (_requests.at(fd).isValid());
+	}
+	catch (std::string &e)
+	{
+		if (e == "ERROR400"){
+			write(fd, "HTTP/1.1 400 Bad Request\r\nContent-Type: text/html;\r\n\r\n<!doctype html>\n<head>\n  <title>400 Bad Request</title>\n</head>\n<body>\n  <h1>Bad Request</h1>\n  <p>request can't be treated</p>\n</body></html>", 197);
+			delFD(fd);
+		}
+		if (e == "ERROR413"){
+			write(fd, "HTTP/1.1 413 Payload Too Large\r\nContent-Type: text/html;\r\n\r\n<!doctype html>\n<head>\n  <title>413 Payload Too Large</title>\n</head>\n<body>\n  <h1>Payload Too Large</h1>\n  <p>body size exceed the config requirement</p>\n</body></html>", 230);
+			delFD(fd);
+		}
+		return false;
+	}
+	catch (...)
+	{
+		write(fd, "HTTP/1.1 400 Bad Request\r\nContent-Type: text/html;\r\n\r\n<!doctype html>\n<head>\n  <title>400 Bad Request</title>\n</head>\n<body>\n  <h1>Bad Request</h1>\n  <p>request can't be treated</p>\n</body></html>", 197);
+		delFD(fd);
+		return false;
+	}
 }
 
 // Public member functions
@@ -381,21 +407,25 @@ void Server::handleRequest(int sock)
 		std::cout << "Exception: Bad request: ";
 		std::cout << e.what() << std::endl;
 #endif
-		_requests.erase(sock);
 		return ;
 	}
 
+	if (req.getConfig() == NULL)
+	{
+		// line below for sending error
+		// std::map<std::string, Location> &dict = Epoll::instance().getFdClientConfigs()[sock].getLocation();
+		
+		write(sock, "HTTP/1.1 404 Not Found\r\nContent-Type: text/html;\r\n\r\n<!doctype html>\n<head>\n  <title>404 Not Found</title>\n</head>\n<body>\n  <h1>Not Found</h1>\n  <p>file requested not found</p>\n</body></html>", 191);
+		return ;
+	}
 
 	if (doCGI(req) == true){
-		_requests.erase(sock);
 		return ;
 	}
 
 	Response resp(&req);
 	std::string buff = resp.createResponse();
 	send(sock, buff.c_str(), buff.length(), 0);
-
-	_requests.erase(sock);
 }
 
 std::map<int, ConfigurationServer> Server::getInstances() const {

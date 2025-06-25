@@ -9,12 +9,16 @@
 #include <sstream>
 #include <sys/socket.h>
 
+#include "Epoll.hpp"
+
 #ifndef COLORS
 
 # define GREY "\033[1;30m"
 # define RESET "\033[0m"
 
 #endif
+
+static std::map<std::string, Location>::iterator decide_location(std::map<std::string, Location> &dict, std::string path);
 
 // Constructors
 Request::Request(void)
@@ -23,7 +27,7 @@ Request::Request(void)
 	return;
 }
 
-Request::Request(int sock) : _sock(sock), _time(std::time(NULL))
+Request::Request(int sock) : _sock(sock), _time(std::time(NULL)), _config(NULL)
 {
 	char buff[8192];
 	int val = recv(this->_sock, buff, sizeof(buff) - 1, MSG_DONTWAIT);
@@ -76,6 +80,7 @@ Request& Request::operator=(const Request &from)
 		_headers = from._headers;
 		_body = from._body;
 		_time = from._time;
+		_config = from._config;
 	}
 	return (*this);
 }
@@ -106,6 +111,11 @@ std::string Request::getPath(void) const
 	return(this->_path);
 }
 
+Location *Request::getConfig(void) const
+{
+	return (_config);
+}
+
 std::string Request::getMethod(void) const
 {
 	return(this->_method);
@@ -121,9 +131,6 @@ std::map<std::string, std::string> Request::getHeaders(void) const
 // Public member functions
 void Request::parseRequest()
 {
-	this->parseFirstLine();
-	this->checkFirstLine();
-
 	this->extractHeaders();
 	this->_body = this->_raw;
 }
@@ -210,12 +217,34 @@ std::string getMethodString(EHttpMethode method) {
 
 bool Request::isValid()
 {
+
 	if (_raw.find("\r\n\r\n") == std::string::npos)
 		return false; //because headers not finished
+	if (_path.empty())
+	{
+		parseFirstLine();
+		checkFirstLine();
+		std::map<std::string, Location> &dict = Epoll::instance().getFdClientConfigs()[_sock].getLocation();
+		std::map<std::string, Location>::iterator dict_iterator = dict.end();
+
+		dict_iterator = decide_location(dict, _path);
+		if (dict_iterator != dict.end())
+			_config = &(dict_iterator->second);
+	}
+	if (_config && ((long) (_raw.length() - _raw.find("\r\n\r\n") - 4) > _config->getMaxBodySize()))
+		throw std::string("ERROR413");
 	if (_raw.find("Content-Length: ") == std::string::npos)
 		return true; //because nothing useful after \r\n\r\n
-	if ((long) (_raw.length() - _raw.find("\r\n\r\n")) >= std::atol(_raw.c_str() + _raw.find("Content-Length: ") + 16))
+	if ((long) (_raw.length() - _raw.find("\r\n\r\n") - 4) == std::atol(_raw.c_str() + _raw.find("Content-Length: ") + 16))
 		return true;
+	if ((long) (_raw.length() - _raw.find("\r\n\r\n") - 4) > std::atol(_raw.c_str() + _raw.find("Content-Length: ") + 16))
+		throw std::string("ERROR400");
 	return false;
+}
 
+static std::map<std::string, Location>::iterator decide_location(std::map<std::string, Location> &dict, std::string path)
+{
+	if (path.find('/', 1) != std::string::npos)
+		path = path.substr(0, path.find('/', 1));
+	return dict.find(path);
 }

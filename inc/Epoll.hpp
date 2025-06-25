@@ -42,7 +42,7 @@ public:
     void handleNewClients(int sock, Server& serv) ;
     void addFd(int fd, bool in = true) ;
     void delAndCloseSocket(int sock);
-    std::map<int, ConfigurationServer> getFdClientConfigs() const;
+    std::map<int, ConfigurationServer> &getFdClientConfigs();
 
 // Static Variable
     static bool isRunning;

@@ -8,9 +8,9 @@
 
 # include <iostream>
 # include <vector>
-# include "Request.hpp"
 # include <map>
 # include "utils.hpp"
+# include "EHttpMethodeEnum.hpp"
 
 enum Boolean {
     FALSE, TRUE, Null

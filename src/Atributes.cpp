@@ -29,10 +29,10 @@ Atributes &Atributes::operator=(const Atributes &a) {
     this->_autoIndex = a._autoIndex;
     this->_maxBodySize = a._maxBodySize;
     this->_cgi = a._cgi;
-    this->_autoIndex = a._autoIndex;
-   _httpMethode = a._httpMethode;
+    this->_httpMethode = a._httpMethode;
     this->_errorPages = a._errorPages;
     this->_root = a._root;
+    this->_index = a._index;
     return *this;
 
 }

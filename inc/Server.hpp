@@ -49,6 +49,7 @@ public:
 	void handleNewClients(Epoll& epoll, int socket);
 	bool createRequests(int fd);
 	std::map<int, ConfigurationServer> getInstances() const;
+	std::map<int, Request> &getRequests();
 	void routineReq();
 
 	// CGI handlers

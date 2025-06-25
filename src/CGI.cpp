@@ -21,7 +21,6 @@
 
 static inline bool endsWith(const std::string &, const std::string &);
 static std::string to_upper(std::string src);
-static std::map<std::string, Location>::iterator decide_location(std::map<std::string, Location> &dict, std::string path);
 static std::map<std::string, std::string> decompose_cgi(std::vector<std::string> cgis);
 
 CGI::CGI(){
@@ -37,22 +36,13 @@ CGI::~CGI(){}
 
 bool doCGI(const Request &req)
 {
-	//TODO need to be in the config files
-	// subject : "Execute CGI based on certain file extension (for example .php)."
 	std::map<std::string, std::string> extensions;
+	Location &config = *req.getConfig();
 
-	Location config;
-	{ 
-		std::map<std::string, Location> dict = Epoll::instance().getFdClientConfigs()[req.getSock()].getLocation();
-		std::map<std::string, Location>::iterator dict_iterator = decide_location(dict, req.getPath());
-		
-		if (dict_iterator == dict.end())
-			return false;
-		config = dict_iterator->second;
-	}
-
-	std::string filePath = req.getPath().substr(req.getPath().find('/', 1));
-
+	std::string filePath = req.getPath();
+	size_t found = req.getPath().find('/', 1); //find failing isn't supposed to happen
+	if (found != std::string::npos) filePath = req.getPath().substr(found);
+	
 #ifdef LINUX
 	filePath = CGI::getActualPath(filePath, config.getRoot());
 #else
@@ -71,7 +61,7 @@ bool doCGI(const Request &req)
 	std::string bin = CGI::checkExtensions(extensions, filePath);
 	if (bin.empty())
 		return false;
-	if (!CGI::checkfilepresence(bin) || !CGI::checkfilepresence(filePath)){
+	if (!CGI::checkfilepresence(bin) || bin[0] != '/' || !CGI::checkfilepresence(filePath)){
 		// TODO change macro to better error 404
 		ERROR_404(req.getSock());
 		return true;
@@ -404,14 +394,6 @@ void CGI::deleteEnvCGI(char **env){
  */
 void CGI::deleteArgvCGI(char **env){
 	deleteEnvCGI(env);
-}
-
-
-static std::map<std::string, Location>::iterator decide_location(std::map<std::string, Location> &dict, std::string path)
-{
-	if (path.find('/', 1) != std::string::npos)
-		path = path.substr(0, path.find('/', 1));
-	return dict.find(path);
 }
 
 static std::map<std::string, std::string> decompose_cgi(std::vector<std::string> cgis){
