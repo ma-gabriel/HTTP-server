@@ -144,11 +144,10 @@ bool Server::isServSocket(int fd) const
 	return (false);
 }
 
-bool Server::addCGI(int fd, CGI::infos infos, bool in)
+void Server::addCGI(int fd, CGI::infos infos, bool in)
 {
 	Epoll::instance().addFd(fd, in);
 	_CGIs[fd] = infos;
-	return true;
 }
 
 static void delFD(int fd)
@@ -261,10 +260,21 @@ void Server::routineReq()
 		}
 	}
 	for (std::vector<int>::iterator it = to_remove.begin(); it != to_remove.end(); ++it){
-		// TODO the usual, probably gonna need to add the ConfigurationServer associated in the map
 		Response::sendResponse(*it, Response::error(504, "Gateway Timeout", _requests.at(*it).getConfig().getErrorPages() ));
-		Epoll::instance().delAndCloseSocket(*it);
 		_requests.erase(*it);
+	}
+}
+
+// function to call when closing a socket
+void Server::killCGIsock(int sock){
+	for (std::map<int, CGI::infos>::iterator it = _CGIs.begin(); it != _CGIs.end(); it++){
+		if (it->second.output_fd == sock){
+			kill(it->second.pid, SIGKILL);
+			waitpid(it->second.pid, NULL, 0);
+			delFD(it->first);
+			_CGIs.erase(it->first);
+			return ;
+		}
 	}
 }
 

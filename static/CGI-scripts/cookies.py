@@ -1,5 +1,3 @@
-uoaefmuhzrfhazùf
-
 #!/usr/bin/env python3
 
 import os
@@ -15,15 +13,15 @@ def main():
     # Print HTTP headers
     # We'll set a new cookie named "user" with value "chatgpt"
     new_cookie = cookies.SimpleCookie()
-    new_cookie['user'] = 'chatgpt'
+    new_cookie['user'] = 'Me obviously'
     new_cookie['user']['path'] = '/'
     new_cookie['user']['max-age'] = 3600  # 1 hour
 
     # Output HTTP headers
-    print("Content-Type: text/html")
+    print("Content-Type: text/html\r")
     for morsel in new_cookie.values():
-        print("Set-Cookie: {}".format(morsel.OutputString()))
-    print()  # blank line ends headers
+        print("Set-Cookie: {}\r".format(morsel.OutputString()))
+    print("\r\n\r")  # blank line ends headers
 
     # Output HTML body
     print("<html><body>")
@@ -37,7 +35,7 @@ def main():
     else:
         print("<p>No cookies received.</p>")
 
-    print("<p>Set a new cookie 'user=chatgpt' valid for 1 hour.</p>")
+    print("<p>Set a new cookie 'user=me obviously' valid for 1 hour.</p>")
     print("</body></html>")
 
 if __name__ == "__main__":

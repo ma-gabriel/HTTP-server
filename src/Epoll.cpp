@@ -230,6 +230,8 @@ void Epoll::modFd(int fd, bool in)
 void Epoll::delAndCloseSocket(int sock)
 {
 	Server::getResponses().erase(sock);
+	Server::instance().killCGIsock(sock);
+
 	#ifdef LINUX
 	if (epoll_ctl(this->_fd, EPOLL_CTL_DEL, sock, NULL) == -1)
 	{

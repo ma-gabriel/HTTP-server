@@ -56,7 +56,6 @@ bool doCGI(const Request &req)
 	if (bin.empty())
 		return false;
 	if (!CGI::checkfilepresence(bin) || bin[0] != '/' || !CGI::checkfilepresence(filePath)){
-		// TODO change macro to better error 404
 		Response::sendResponse(req.getSock(), Response::error(404, "Not found", config.getErrorPages()));
 		return true;
 	}
@@ -118,20 +117,11 @@ void CGI::parentHandling(pid_t pid)
 		Response::sendResponse(_socket, Response::error(500, "Internal Server Error", _config.getErrorPages()));
 		return ;
 	}
-	//if this one fails (like kernel error) the CGI won't have access to the body of the request
 	if (_body.length() > 0)
 		Server::instance().addCGI(_toCGI[1], CGI::infos(std::time(NULL), -1, -1, _body, _config), false);
 	else
 		close(_toCGI[1]);
-	//TODO change macro to error 500
-	if (!Server::instance().addCGI(_fromCGI[0], CGI::infos(std::time(NULL), pid, _socket, "", _config), true)){
-		kill(pid, SIGKILL);
-		waitpid(pid, NULL, 0);
-		close(_fromCGI[0]);
-		close(_toCGI[1]);
-		Response::sendResponse(_socket, Response::error(500, "Internal Server Error", _config.getErrorPages()));
-		return ;
-	}
+	Server::instance().addCGI(_fromCGI[0], CGI::infos(std::time(NULL), pid, _socket, "", _config), true);
 }
 
 void CGI::childExec(std::map<std::string,std::string> &envRaw)

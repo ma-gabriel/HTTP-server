@@ -62,7 +62,8 @@ public:
 #endif
 
 	bool isCGI(int fd) const;
-	bool addCGI(int fd, CGI::infos infos,bool in);
+	void addCGI(int fd, CGI::infos infos,bool in);
+	void killCGIsock(int sock);
 	void routineCGI();
 
 private:

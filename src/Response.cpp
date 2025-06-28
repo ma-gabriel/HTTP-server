@@ -78,21 +78,37 @@ std::string Response::error(int error, std::string name, std::map<int, std::stri
 
 std::string Response::createResponse(Request &req)
 {
+    struct  stat data;
     std::string res;
     std::string file = req.getPath();
+
+    size_t query = file.find('?');
+    if (query != std::string::npos) file.erase(query);
     file = file.substr(req.getConfig().getPath().length());
     std::string root = req.getConfig().getRoot().length() ? req.getConfig().getRoot() : "/";
     file = "." + root + file;
 
     if (access(file.c_str(), F_OK) != 0)
-    return error(404, "Not Found", req.getConfig().getErrorPages());
-    
-	struct  stat data;
-    if (stat(file.c_str(), &data) != 0
-		|| S_ISREG(data.st_mode) == 0
-		|| access(file.c_str(), F_OK) != 0)
+        return error(404, "Not Found", req.getConfig().getErrorPages());
+    if (access(file.c_str(), R_OK) != 0)
         return error(403, "Forbidden", req.getConfig().getErrorPages());
 
+    // NOT WORKING BELOW
+    // _index is always empty
+    if (stat(file.c_str(), &data) == 0
+		&& S_ISDIR(data.st_mode) != 0)
+    {
+        std::vector<std::string>::const_iterator it = req.getConfig().getIndex().begin();
+        for (; it != req.getConfig().getIndex().end(); it++){
+            file = "." + root + *it;
+            if (stat(file.c_str(), &data) == 0
+                && S_ISREG(data.st_mode) != 0
+                && access(file.c_str(), R_OK) == 0)
+                break;
+        }
+        if (it == req.getConfig().getIndex().end())
+            return error(404, "Not Found", req.getConfig().getErrorPages());
+    }
     std::ifstream infile(file.c_str());
     if (!infile.is_open())
         return error(403, "Forbidden", req.getConfig().getErrorPages());

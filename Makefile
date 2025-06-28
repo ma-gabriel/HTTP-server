@@ -3,8 +3,6 @@ NAME		= webserv
 CXX			= c++
 CFLAGS		= -std=c++98 -Wall -Werror -Wextra -g3
 DEPFLAGS	= -MMD -MP
-AUTHOR		= elleroux
-DATE		= 2025/03/31 20:11:19
 OS          = $(shell uname)
 
 

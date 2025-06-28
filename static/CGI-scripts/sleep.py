@@ -34,8 +34,6 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 <span class="Identifier">CXX			</span>= c++
 <span class="Identifier">CFLAGS		</span>= -std=c++98 -Wall -Werror -Wextra
 <span class="Identifier">DEPFLAGS	</span>= -MMD -MP
-<span class="Identifier">AUTHOR		</span>= elleroux
-<span class="Identifier">DATE		</span>= 2025/03/31 20:11:19
 
 
 <span class="Comment">### program files</span>
