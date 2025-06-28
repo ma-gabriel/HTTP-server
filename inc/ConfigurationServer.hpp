@@ -24,7 +24,6 @@ public:
      std::map<std::string, Location> &getLocation();
     ConfigurationServer &operator=(const ConfigurationServer &from);
      std::string &getPortString();
-
      std::string &getHost();
 
 private:

@@ -27,8 +27,9 @@ Request::Request(void)
 	return;
 }
 
-Request::Request(int sock) : _sock(sock), _time(std::time(NULL)), _config(NULL)
+Request::Request(int sock) : _sock(sock), _time(std::time(NULL))
 {
+	_config = Location(Epoll::instance().getFdClientConfigs()[sock]);
 	char buff[8192];
 	int val = recv(this->_sock, buff, sizeof(buff) - 1, MSG_DONTWAIT);
 	if (val == -1)
@@ -111,7 +112,7 @@ std::string Request::getPath(void) const
 	return(this->_path);
 }
 
-Location *Request::getConfig(void) const
+Location Request::getConfig(void) const
 {
 	return (_config);
 }
@@ -229,9 +230,11 @@ bool Request::isValid()
 
 		dict_iterator = decide_location(dict, _path);
 		if (dict_iterator != dict.end())
-			_config = &(dict_iterator->second);
+			_config = dict_iterator->second;
+		else
+			_config = Location(Epoll::instance().getFdClientConfigs()[_sock]);
 	}
-	if (_config && ((long) (_raw.length() - _raw.find("\r\n\r\n") - 4) > _config->getMaxBodySize()))
+	if (((long) (_raw.length() - _raw.find("\r\n\r\n") - 4) > _config.getMaxBodySize()))
 		throw std::string("ERROR413");
 	if (_raw.find("Content-Length: ") == std::string::npos)
 		return true; //because nothing useful after \r\n\r\n
@@ -244,7 +247,8 @@ bool Request::isValid()
 
 static std::map<std::string, Location>::iterator decide_location(std::map<std::string, Location> &dict, std::string path)
 {
-	if (path.find('/', 1) != std::string::npos)
-		path = path.substr(0, path.find('/', 1));
+	if (path.find('/', 1) == std::string::npos)
+		return dict.end();
+	path = path.substr(0, path.find('/', 1));
 	return dict.find(path);
 }

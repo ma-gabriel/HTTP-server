@@ -39,6 +39,10 @@ class CGI
             pid_t pid;
             int output_fd;
             std::string body;
+            Location config;
+            infos(std::time_t ts, pid_t p, int fd, const std::string& b, Location &c)
+                : timestamp(ts), pid(p), output_fd(fd), body(b), config(c) {}
+            infos() : timestamp(0), pid(-1), output_fd(-1), body("") {}
         };
 
         static std::string getActualPath(const std::string &path, const std::string &root);
@@ -49,7 +53,7 @@ class CGI
         static std::string checkExtensions(std::map<std::string,std::string> extensions, std::string &path);
 
         static void launch(const Request &req, const std::string &binPath, std::string filePath, Location &config);
-        static ssize_t flush(int fd, std::string text);
+        static void flush(int fd, std::string text);
 };
 
 bool doCGI(const Request &req);

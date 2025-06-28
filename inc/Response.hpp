@@ -9,32 +9,19 @@
 class Response
 {
 public:
-// Constructors
-    Response(Request* req);
-    Response(const Response &from);
-// Destructors
-    ~Response(void);
-// Overloaded operators
-    Response &operator=(const Response &from);
-// Getters
-// Setters
 // Public member functions
-    static void sendBadRequest(int sock, std::string what);
-    std::string createResponse(void);
+    static std::string error(int error, std::string name, std::map<int, std::string> pages);
+    static std::string createResponse(Request &req);
+    static void sendResponse(int sock, std::string content);
 
 private:
 // Private constructor
+// Constructors
+    Response(const Response &from);
+    Response &operator=(const Response &from);
+// Destructors
+    virtual ~Response(void) = 0;
     Response(void);
-// Private member functions
-    std::string concatenateResponse(void);
-    std::string openFile(void);
-// Private attributs
-    Request*	_req;
-    std::string	_raw;
-    std::string	_version;
-    std::string _status;
-    std::map<std::string, std::string> _headers;
-    std::string	_body;
 };
 
 std::ostream& operator<<(std::ostream& stream, const Response& instance);

@@ -105,8 +105,10 @@ void Epoll::routine(Server &serv)
 		}
 		if (!(this->_events[i].events & EPOLLIN) && !(this->_events[i].events & EPOLLOUT))
 			this->delAndCloseSocket(this->_events[i].data.fd);
+		else if (this->_events[i].events & EPOLLIN)
+				this->handleEvents(this->_events[i].data.fd);
 		else
-			this->handleEvents(this->_events[i].data.fd);
+			Server::writeResponses(this->_events[i].data.fd);
 	}
     #else
 	int eventKqueue;
@@ -145,7 +147,6 @@ void Epoll::handleEvents(int sock)
 #endif
 		serv.handleRequest(sock);
 		serv.getRequests().erase(sock);
-		delAndCloseSocket(sock);
 	}
 }
 
@@ -193,8 +194,42 @@ void Epoll::addFd(int fd, bool in)
 	#endif
 }
 
+
+void Epoll::modFd(int fd, bool in)
+{
+	if (fd == -1)
+		return;
+	#ifdef LINUX
+	struct epoll_event event;
+
+	event.data.fd = fd;
+	event.events = (EPOLLIN * in) | (EPOLLOUT * !in) | EPOLLET;
+
+	if (epoll_ctl(this->_fd, EPOLL_CTL_MOD, fd, &event) == -1)
+	{
+		perror("epoll_ctl (mod)");
+		return;
+	}
+	#else
+	int flags = fcntl(fd, F_GETFL, 0);
+	fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+
+	struct kevent change;
+	if (!in) {
+		this->_epollWrite.push_back(fd);
+	}
+	EV_SET(&change, fd, in ? EVFILT_READ : EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, NULL);
+	if (kevent(this->_fd, &change, 1,  NULL, 0, NULL) == -1) {
+		close(fd);
+		return;
+	}
+	#endif
+}
+
+
 void Epoll::delAndCloseSocket(int sock)
 {
+	Server::getResponses().erase(sock);
 	#ifdef LINUX
 	if (epoll_ctl(this->_fd, EPOLL_CTL_DEL, sock, NULL) == -1)
 	{

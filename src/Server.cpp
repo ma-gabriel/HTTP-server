@@ -85,9 +85,14 @@ Server& Server::operator=(const Server &from)
 }
 
 
+std::map<int, std::string> &Server::getResponses()
+{
+	return Server::instance()._responses;
+}
+
 std::map<int, Request> &Server::getRequests()
 {
-	return _requests;
+	return Server::instance()._requests;
 }
 
 // Getters
@@ -191,7 +196,6 @@ void Server::handleCGI(epoll_event event)
 		if (event.events & EPOLLHUP || event.events & EPOLLERR){
 			CGI::flush(infos.output_fd, infos.body);
 			delFD(fd);
-			close(infos.output_fd);
 			kill(infos.pid, SIGKILL);
 			waitpid(infos.pid, NULL, 0);
 			_CGIs.erase(fd);
@@ -233,7 +237,6 @@ void Server::handleCGI(struct kevent kev)
 		if ((kev.flags & EV_EOF) || (kev.flags & EV_ERROR)) {
 			CGI::flush(infos.output_fd, infos.body);
 			delFD(fd);
-			close(infos.output_fd);
 			kill(infos.pid, SIGKILL);
 			waitpid(infos.pid, NULL, 0);
 			_CGIs.erase(fd);
@@ -259,8 +262,8 @@ void Server::routineReq()
 	}
 	for (std::vector<int>::iterator it = to_remove.begin(); it != to_remove.end(); ++it){
 		// TODO the usual, probably gonna need to add the ConfigurationServer associated in the map
-		write(*it, "HTTP/1.1 504 Gateway Timeout\r\nContent-Type: text/html;\r\n\r\n<!doctype html>\n<head>\n  <title>504 Gateway Timeout</title>\n</head>\n<body>\n  <h1>Gateway timeout</h1>\n  <p>The server did not respond in time. Please try again later.</p>\n</body></html>", 244);
-		delFD(*it);
+		Response::sendResponse(*it, Response::error(504, "Gateway Timeout", _requests.at(*it).getConfig().getErrorPages() ));
+		Epoll::instance().delAndCloseSocket(*it);
 		_requests.erase(*it);
 	}
 }
@@ -271,47 +274,42 @@ void Server::routineCGI()
 	for (std::map<int, CGI::infos>::iterator it = _CGIs.begin(); it != _CGIs.end(); it++){
 		if (it->second.timestamp + 15 < std::time(NULL)){
 			if (it->second.pid != -1) {
-				// means it's the output of the CGI
-				// TODO write from a file if error 504 and all, not from a string
-				write(it->second.output_fd, "HTTP/1.1 504 Gateway Timeout\r\nContent-Type: text/html;\r\n\r\n<!doctype html>\n<head>\n  <title>504 Gateway Timeout</title>\n</head>\n<body>\n  <h1>Gateway timeout</h1>\n  <p>The server did not respond in time. Please try again later.</p>\n</body></html>", 244);
-				close(it->second.output_fd);
+				Response::sendResponse(it->second.output_fd, Response::error(504, "Gateway Timeout", it->second.config.getErrorPages()));
 				kill(it->second.pid, SIGKILL);
 				waitpid(it->second.pid, NULL, 0);
 			}
-			delFD(it->first);
+			to_remove.push_back(it->first);
 		}
 	}
 	for (std::vector<int>::iterator it = to_remove.begin(); it != to_remove.end(); ++it){
+		delFD(*it);
 		_CGIs.erase(*it);
 	}
 }
 
-bool Server::createRequests(int fd)
+bool Server::createRequests(int sock)
 {
 	try {
-	std::map<int, Request>::iterator it = _requests.find(fd);
-	if (it == _requests.end())
-		_requests.insert(std::make_pair(fd, Request(fd)));
-	else
-		it->second.read();
-	return (_requests.at(fd).isValid());
+		std::map<int, Request>::iterator it = _requests.find(sock);
+		if (it == _requests.end())
+			_requests.insert(std::make_pair(sock, Request(sock)));
+		else
+			it->second.read();
+		return (_requests.at(sock).isValid());
 	}
 	catch (std::string &e)
 	{
-		if (e == "ERROR400"){
-			write(fd, "HTTP/1.1 400 Bad Request\r\nContent-Type: text/html;\r\n\r\n<!doctype html>\n<head>\n  <title>400 Bad Request</title>\n</head>\n<body>\n  <h1>Bad Request</h1>\n  <p>request can't be treated</p>\n</body></html>", 197);
-			delFD(fd);
-		}
-		if (e == "ERROR413"){
-			write(fd, "HTTP/1.1 413 Payload Too Large\r\nContent-Type: text/html;\r\n\r\n<!doctype html>\n<head>\n  <title>413 Payload Too Large</title>\n</head>\n<body>\n  <h1>Payload Too Large</h1>\n  <p>body size exceed the config requirement</p>\n</body></html>", 230);
-			delFD(fd);
-		}
+		if (e == "ERROR400")
+			Response::sendResponse(sock, Response::error(400, "Bad Request", _requests.at(sock).getConfig().getErrorPages()));
+		if (e == "ERROR413")
+			Response::sendResponse(sock, Response::error(413, "Request Entity Too Large", _requests.at(sock).getConfig().getErrorPages()));
+		Server::getRequests().erase(sock);
 		return false;
 	}
 	catch (...)
 	{
-		write(fd, "HTTP/1.1 400 Bad Request\r\nContent-Type: text/html;\r\n\r\n<!doctype html>\n<head>\n  <title>400 Bad Request</title>\n</head>\n<body>\n  <h1>Bad Request</h1>\n  <p>request can't be treated</p>\n</body></html>", 197);
-		delFD(fd);
+		Response::sendResponse(sock, Response::error(400, "Bad Request", _requests.at(sock).getConfig().getErrorPages()));
+		Server::getRequests().erase(sock);
 		return false;
 	}
 }
@@ -400,9 +398,8 @@ void Server::handleRequest(int sock)
 	Request &req = _requests.at(sock);
 	try {
 		req.parseRequest();
-	}
-	catch (Request::BadRequestException &e) {
-		Response::sendBadRequest(sock, e.what());
+	} catch (Request::BadRequestException &e) {
+		Response::sendResponse(sock, Response::error(400, "Bad Request", req.getConfig().getErrorPages()));
 #ifdef DEBUG
 		std::cout << "Exception: Bad request: ";
 		std::cout << e.what() << std::endl;
@@ -410,26 +407,15 @@ void Server::handleRequest(int sock)
 		return ;
 	}
 
-	if (req.getConfig() == NULL)
-	{
-		// line below for sending error
-		// std::map<std::string, Location> &dict = Epoll::instance().getFdClientConfigs()[sock].getLocation();
-		
-		write(sock, "HTTP/1.1 404 Not Found\r\nContent-Type: text/html;\r\n\r\n<!doctype html>\n<head>\n  <title>404 Not Found</title>\n</head>\n<body>\n  <h1>Not Found</h1>\n  <p>file requested not found</p>\n</body></html>", 191);
-		return ;
-	}
-
 	if (doCGI(req) == true){
 		return ;
 	}
 
-	Response resp(&req);
-	std::string buff = resp.createResponse();
-	send(sock, buff.c_str(), buff.length(), 0);
+	Response::sendResponse(sock, Response::createResponse(req));
 }
 
-std::map<int, ConfigurationServer> Server::getInstances() const {
-	return this->_instances;
+std::map<int, ConfigurationServer> Server::getInstances() {
+	return Server::instance()._instances;
 }
 
 // Overloaded print operator
@@ -439,4 +425,18 @@ std::ostream& operator<<(std::ostream& stream, Server& server)
 	stream << "nbClients -> " << server.getClientNumber();
 
 	return (stream);
+}
+
+
+void Server::writeResponses(int sock)
+{
+	std::string &str = Server::instance()._responses[sock];
+
+	ssize_t len = send(sock, str.c_str(), str.length(), MSG_DONTWAIT);
+	if (len == -1)
+		return ;
+	str = str.substr(len);
+	if (str.length())
+		return ;
+	Epoll::instance().delAndCloseSocket(sock);
 }

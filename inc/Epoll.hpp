@@ -40,7 +40,8 @@ public:
     void routine(Server& serv);
     void handleEvents(int sock);
     void handleNewClients(int sock, Server& serv) ;
-    void addFd(int fd, bool in = true) ;
+    void addFd(int fd, bool in = true);
+    void modFd(int fd, bool in = false);
     void delAndCloseSocket(int sock);
     std::map<int, ConfigurationServer> &getFdClientConfigs();
 

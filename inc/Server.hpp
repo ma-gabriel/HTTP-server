@@ -46,11 +46,13 @@ public:
 	int newInstance(ConfigurationServer server);
 	int newClient(int sock);
 	void handleRequest(int sock);
-	void handleNewClients(Epoll& epoll, int socket);
 	bool createRequests(int fd);
-	std::map<int, ConfigurationServer> getInstances() const;
-	std::map<int, Request> &getRequests();
 	void routineReq();
+	static std::map<int, ConfigurationServer> getInstances();
+	static std::map<int, Request> &getRequests();
+	static std::map<int, std::string> &getResponses();
+
+	static void writeResponses(int sock);
 
 	// CGI handlers
 #ifdef LINUX
@@ -74,6 +76,7 @@ private:
 	std::map<int, ConfigurationServer> _instances;
 	std::deque<int> _clients;
 	std::map<int, Request> _requests;
+	std::map<int, std::string> _responses;
 
 #ifdef DEBUG
 	std::map<int, char*> _clients_debug;

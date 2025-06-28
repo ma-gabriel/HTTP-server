@@ -4,7 +4,11 @@
 
 //#include <iostream>
 #include <fstream>
+#include <unistd.h>
+#include <sys/stat.h>
 #include <sys/socket.h>
+#include <sstream>
+#include "Epoll.hpp"
 
 #ifndef COLORS
 
@@ -16,13 +20,6 @@
 // Constructors
 Response::Response(void)
 {
-    // std::cout << GREY << "Response constructor called" << RESET << std::endl;
-    return;
-}
-
-Response::Response(Request* req) : _req(req)
-{
-    this->_version = req->getVersion();
     // std::cout << GREY << "Response constructor called" << RESET << std::endl;
     return;
 }
@@ -56,89 +53,61 @@ Response& Response::operator=(const Response &from)
 // Setters
 
 // Public member functions
-void Response::sendBadRequest(int sock, std::string what)
+
+std::string Response::error(int error, std::string name, std::map<int, std::string> pages)
 {
-    std::string resp;
-    resp.append("HTTP/1.1 ");
-    resp.append("400 Bad Request\r\n");
+    std::string res;
+    std::ifstream infile;
+    std::map<int, std::string>::const_iterator file = pages.find(error);
 
-    resp.append("Content-Type: application/json\r\n");
-
-    /*
-    * 47 comes here from the skel of empty Bad Request response:
-    *
-    * {
-    *	 "error": "Bad request",
-    *	 "message": "",
-    * }
-    */
-    int content_lenght = what.length() + 47;
-    resp.append("Content-Lenght: " + stoi(content_lenght) + "\r\n");
-
-    resp.append("{\r\n");
-    resp.append("\t\"error\": \"Bad request\",\r\n");
-    resp.append("\t\"message\": \"" + what + "\",\r\n");
-    resp.append("}\r\n");
-
-    send(sock, resp.c_str(), resp.length(), 0);
-}
-
-std::string Response::createResponse(void)
-{
-    this->_status = "200 OK";
-    this->_headers["Server"] = PROJECT_NAME;
-    this->_body = openFile();
-    this->_headers["Content-Lenght"] = stoi(this->_body.length());
-
-    return (concatenateResponse());
-}
-
-std::string Response::openFile()
-{
-    std::string file_content;
-
-    std::string file_path = this->_req->getPath();
-    file_path.erase(file_path.begin());
-
-    std::ifstream fstream(file_path.c_str(), std::ios::in);
-    if (fstream.is_open())
-    {
-        std::string line;
-        while (getline(fstream, line))
-        {
-            file_content.append(line);
-            file_content.append("\n");
-        }
-    }
-#ifdef DEBUG
+    if (file != pages.end())
+        infile.open(("." + file->second).c_str());
+    
+    if (!infile.is_open())
+        res = static_cast< std::ostringstream & >(( std::ostringstream() << std::dec << \
+        "<!doctype html>\n<head>\n  <title>" << error << " " <<  name << \
+        "</title>\n</head>\n<body>\n  <h1>" << name << "</h1>\n</body></html>")).str();
     else
-		std::cout << "Error opening file: " << this->_req->getPath() << std::endl;
-#endif
-    fstream.close();
-    return (file_content);
+        res.assign(std::istreambuf_iterator<char>(infile), std::istreambuf_iterator<char>());
+
+
+    return static_cast< std::ostringstream & >(( std::ostringstream() << std::dec << \
+    "HTTP/1.1 " << error << " " << name << "\r\nContent-Type: text/html\r\nContent-Length: " \
+    << res.length() << "\r\n\r\n")).str() + res;
+}
+
+std::string Response::createResponse(Request &req)
+{
+    std::string res;
+    std::string file = req.getPath();
+    file = file.substr(req.getConfig().getPath().length());
+    std::string root = req.getConfig().getRoot().length() ? req.getConfig().getRoot() : "/";
+    file = "." + root + file;
+
+    if (access(file.c_str(), F_OK) != 0)
+    return error(404, "Not Found", req.getConfig().getErrorPages());
+    
+	struct  stat data;
+    if (stat(file.c_str(), &data) != 0
+		|| S_ISREG(data.st_mode) == 0
+		|| access(file.c_str(), F_OK) != 0)
+        return error(403, "Forbidden", req.getConfig().getErrorPages());
+
+    std::ifstream infile(file.c_str());
+    if (!infile.is_open())
+        return error(403, "Forbidden", req.getConfig().getErrorPages());
+    else
+        res.assign(std::istreambuf_iterator<char>(infile), std::istreambuf_iterator<char>());
+
+    return static_cast< std::ostringstream & >(( std::ostringstream() << std::dec << \
+    "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: " \
+    << res.length() << "\r\n\r\n")).str() + res;
 }
 
 // Private member functions
-std::string Response::concatenateResponse(void)
+
+void Response::sendResponse(int sock, std::string content)
 {
-    this->_raw.append(this->_version);
-    this->_raw.append(" ");
-    this->_raw.append(this->_status);
-    this->_raw.append("\r\n");
-
-    std::map<std::string, std::string>::iterator it;
-    for (it = this->_headers.begin(); it != this->_headers.end(); it++)
-    {
-        this->_raw.append(it->first + ": " + it->second);
-        this->_raw.append("\r\n");
-    }
-
-    this->_raw.append("\r\n");
-    this->_raw.append(this->_body);
-
-#ifdef DEBUG
-    std::cout << "Response: " << std::endl;
-	std::cout << this->_raw << std::endl;
-#endif
-    return (this->_raw);
+    Epoll::instance().modFd(sock);
+    Server::getResponses()[sock] = content;
 }

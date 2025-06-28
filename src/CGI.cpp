@@ -13,6 +13,7 @@
 #include <fcntl.h>
 #include <sys/wait.h>
 
+#include "Response.hpp"
 #include "CGI.hpp"
 #include "Parser.hpp"
 #include "Epoll.hpp"
@@ -29,19 +30,12 @@ CGI::CGI(){
 }
 CGI::~CGI(){}
 
-
-#define ERROR_500(socket) write(socket, "HTTP/1.1 500 Internal Server Error\r\nContent-Type: text/html;\r\n\r\n<!doctype html>\n<head>\n  <title>500 Internal Server Error</title>\n</head>\n<body>\n  <h1>Internal Server Error</h1>\n  <p>a function failed due to kernel limitations</p>\n</body></html>", 246)	
-#define ERROR_404(socket) write(socket, "HTTP/1.1 404 Not Found\r\nContent-Type: text/html;\r\n\r\n<!doctype html>\n<head>\n  <title>404 Not Found</title>\n</head>\n<body>\n  <h1>Not Found</h1>\n  <p>file requested not found</p>\n</body></html>", 191)
-#define ERROR_403(socket) write(socket, "HTTP/1.1 403 Forbidden\r\nContent-Type: text/html;\r\n\r\n<!doctype html>\n<head>\n  <title>403 Forbidden </title>\n</head>\n<body>\n  <h1>Forbidden</h1>\n  <p>file requested not executable</p>\n</body></html>", 197)
-
 bool doCGI(const Request &req)
 {
 	std::map<std::string, std::string> extensions;
-	Location &config = *req.getConfig();
+	Location config = req.getConfig();
 
-	std::string filePath = req.getPath();
-	size_t found = req.getPath().find('/', 1); //find failing isn't supposed to happen
-	if (found != std::string::npos) filePath = req.getPath().substr(found);
+	std::string filePath = req.getPath().substr(config.getPath().length());
 	
 #ifdef LINUX
 	filePath = CGI::getActualPath(filePath, config.getRoot());
@@ -63,13 +57,12 @@ bool doCGI(const Request &req)
 		return false;
 	if (!CGI::checkfilepresence(bin) || bin[0] != '/' || !CGI::checkfilepresence(filePath)){
 		// TODO change macro to better error 404
-		ERROR_404(req.getSock());
+		Response::sendResponse(req.getSock(), Response::error(404, "Not found", config.getErrorPages()));
 		return true;
 	}
 
 	if (!CGI::checkfileexec(bin) || !CGI::checkfileexec(filePath)){
-		// TODO change macro to better error 403
-		ERROR_403(req.getSock());
+		Response::sendResponse(req.getSock(), Response::error(403, "Forbidden", config.getErrorPages()));
 		return true;
 	}
 	CGI::launch(req, bin, filePath, config);
@@ -85,19 +78,13 @@ void CGI::launch(const Request &req, const std::string &binPath, std::string fil
 	handle._query = CGI::getQuery(req.getPath());
 	handle._binPath = binPath;
 	handle._config = config;
-	handle._socket = dup(req.getSock());
-	if (handle._socket == -1) {
-		ERROR_500(handle._socket);
-		return ;
-	}
+	handle._socket = req.getSock();
 	handle._fileLocation = filePath.substr(0, filePath.find_last_of('/'));
 	handle._binName = binPath.find('/') != std::string::npos ? binPath.substr(binPath.find_last_of('/')) : binPath;
 	handle._fileName = filePath.substr(filePath.find_last_of('/') + 1);
 	if (pipe(handle._toCGI) || pipe(handle._fromCGI)) {
 		close(handle._toCGI[0]); close(handle._toCGI[1]);
-		// TODO change macro to better error 500
-		ERROR_500(handle._socket);
-		close(handle._socket);
+		Response::sendResponse(req.getSock(), Response::error(500, "Internal Server Error", config.getErrorPages()));
 		return ;
 	}
 
@@ -105,9 +92,7 @@ void CGI::launch(const Request &req, const std::string &binPath, std::string fil
 	if (pid == -1) {
 		close(handle._toCGI[0]); close(handle._toCGI[1]);
 		close(handle._fromCGI[0]); close(handle._fromCGI[1]);
-		// TODO change macro to better error 500
-		ERROR_500(handle._socket);
-		close(handle._socket);
+		Response::sendResponse(req.getSock(), Response::error(500, "Internal Server Error", config.getErrorPages()));
 		return ;
 	}
 	if (pid == 0){
@@ -117,16 +102,6 @@ void CGI::launch(const Request &req, const std::string &binPath, std::string fil
 	}
 	else
 		handle.parentHandling(pid);
-}
-
-static CGI::infos generate(std::time_t ts, pid_t pid, int fd, std::string body)
-{
-	CGI::infos buff;
-	buff.timestamp = ts;
-	buff.pid = pid;
-	buff.output_fd = fd;
-	buff.body = body;
-	return buff;
 }
 
 void CGI::parentHandling(pid_t pid)
@@ -140,24 +115,21 @@ void CGI::parentHandling(pid_t pid)
 		close(_toCGI[1]);
 		kill(pid, SIGKILL);
 		waitpid(pid, NULL, 0);
-		//TODO change macro to error 500
-		ERROR_500(_socket);
-		close(_socket);
+		Response::sendResponse(_socket, Response::error(500, "Internal Server Error", _config.getErrorPages()));
 		return ;
 	}
 	//if this one fails (like kernel error) the CGI won't have access to the body of the request
 	if (_body.length() > 0)
-		Server::instance().addCGI(_toCGI[1], generate(std::time(NULL), -1, -1, _body),  false);
+		Server::instance().addCGI(_toCGI[1], CGI::infos(std::time(NULL), -1, -1, _body, _config), false);
 	else
 		close(_toCGI[1]);
 	//TODO change macro to error 500
-	if (!Server::instance().addCGI(_fromCGI[0], generate(std::time(NULL), pid, _socket, ""), true)){
+	if (!Server::instance().addCGI(_fromCGI[0], CGI::infos(std::time(NULL), pid, _socket, "", _config), true)){
 		kill(pid, SIGKILL);
 		waitpid(pid, NULL, 0);
 		close(_fromCGI[0]);
 		close(_toCGI[1]);
-		ERROR_500(_socket);
-		close(_socket);
+		Response::sendResponse(_socket, Response::error(500, "Internal Server Error", _config.getErrorPages()));
 		return ;
 	}
 }
@@ -169,7 +141,8 @@ void CGI::childExec(std::map<std::string,std::string> &envRaw)
 	close(_toCGI[1]);
 	close(_fromCGI[0]);
 	if (tmp) {
-		ERROR_500(_fromCGI[1]);
+		std::string res = Response::error(500, "Internal Server Error", _config.getErrorPages());
+		write(_fromCGI[1], res.c_str(), res.length());
 		close(_fromCGI[1]);
 		std::exit(1);
 	}
@@ -183,13 +156,15 @@ void CGI::childExec(std::map<std::string,std::string> &envRaw)
 	if (chdir(_fileLocation.c_str()) != -1){
 		execve(_binPath.c_str(), argv, env);
 	}
-	ERROR_500(1);
+
+	std::string res = Response::error(500, "Internal Server Error", _config.getErrorPages());
+	write(_fromCGI[1], res.c_str(), res.length());
 	deleteEnvCGI(env);
 	deleteArgvCGI(argv);
 	std::exit(1);
 }
 
-ssize_t CGI::flush(int fd, std::string text){
+void CGI::flush(int fd, std::string text){
 	size_t body = text.find("\r\n\r\n");
 	if (body == std::string::npos) {
 		text = static_cast< std::ostringstream & >(( std::ostringstream() << std::dec << \
@@ -213,14 +188,8 @@ ssize_t CGI::flush(int fd, std::string text){
 			<< "Content-Length: " << text.length() - text.find("\r\n\r\n") - 4 << "\r\n")).str());
 		}
 	}
-	ssize_t total = 0;
-	while (text.length()) {
-		ssize_t len = send(fd, text.c_str(), text.length(), 0);
-		if (len == -1) return -1;
-		text = text.substr(len);
-		total += len;
-	}
-	return total;
+
+	Response::sendResponse(fd, text);
 }
 
 /**
@@ -231,7 +200,7 @@ ssize_t CGI::flush(int fd, std::string text){
  * @return root (if present) followed by shortened path
  */
 std::string CGI::getActualPath(const std::string &path, const std::string &root){
-	return root + (path.find('?') != std::string::npos ? std::string(path).erase(path.find('?')) : path);
+	return "." + root + (path.find('?') != std::string::npos ? std::string(path).erase(path.find('?')) : path);
 }
 
 /** 
