@@ -32,7 +32,7 @@ int main(int argc, char **argv)
 			epoll.addFd(server.newInstance(it->second));
 		}
 		while (Epoll::isRunning)
-				epoll.routine(Server::instance());
+				epoll.routine();
 	}
 	catch (const std::exception &e) {
 		std::cerr << e.what() << std::endl;

@@ -31,15 +31,15 @@ public:
 	static Epoll &instance();
 // Getters
     int getFd(void) const;
-#ifdef LINUX
-    struct epoll_event* getEventsPtr(void) const;
-#else
-    struct kevent *getKevents(void) const;
-#endif
+// #ifdef LINUX
+//     static struct epoll_event* getEventsPtr(void) const;
+// #else
+//     static struct kevent *getKevents(void) const;
+// #endif
 // Public member functions
-    void routine(Server& serv);
+    void routine();
     void handleEvents(int sock);
-    void handleNewClients(int sock, Server& serv) ;
+    void handleNewClients(int sock) ;
     void addFd(int fd, bool in = true);
     void modFd(int fd, bool in = false);
     void delAndCloseSocket(int sock);

@@ -260,7 +260,7 @@ void Server::routineReq()
 		}
 	}
 	for (std::vector<int>::iterator it = to_remove.begin(); it != to_remove.end(); ++it){
-		Response::sendResponse(*it, Response::error(504, "Gateway Timeout", _requests.at(*it).getConfig().getErrorPages() ));
+		Response::sendResponse(*it, Response::error(504, "Gateway Timeout", _requests.at(*it).getConfig().getErrorPages()));
 		_requests.erase(*it);
 	}
 }

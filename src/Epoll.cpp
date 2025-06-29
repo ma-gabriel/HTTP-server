@@ -76,19 +76,20 @@ int Epoll::getFd(void) const
 	return (this->_fd);
 }
 
-#ifdef LINUX
-epoll_event* Epoll::getEventsPtr(void) const
-{
-	return (this->_events);
-}
-#else
-struct kevent *Epoll::getKevents(void) const {
-	return this->_events;
-}
-#endif
+// #ifdef LINUX
+// epoll_event* Epoll::getEventsPtr(void) const
+// {
+// 	return (instance()._events);
+// }
+// #else
+// struct kevent *Epoll::getKevents(void) const {
+// 	return instance()._events;
+// }
+// #endif
 
-void Epoll::routine(Server &serv)
+void Epoll::routine()
 {
+	Server &serv = Server::instance();
     #ifdef LINUX
 	int event_quant;
 
@@ -139,7 +140,7 @@ void Epoll::handleEvents(int sock)
 {
 	Server &serv = Server::instance();
 	if (serv.isServSocket(sock) == true)
-		this->handleNewClients(sock, serv);
+		this->handleNewClients(sock);
 	else if (serv.createRequests(sock))		
 	{
 #ifdef DEBUG
@@ -151,11 +152,12 @@ void Epoll::handleEvents(int sock)
 }
 
 
-void Epoll::handleNewClients(int sock, Server &serv) {
+void Epoll::handleNewClients(int sock) {
+	Server &serv = Server::instance();
 	int client_sock = serv.newClient(sock);
 	if (client_sock != -1) {
 		this->addFd(client_sock);
-		this->_fdClientsConfigs[client_sock] = serv.getInstances()[sock];
+		this->_fdClientsConfigs[client_sock] = Server::getInstances()[sock];
 #if DEBUG
 		std::cout << "New client connected on socket: " << client_sock << std::endl << std::endl;
 		std::cout << "server client: " << this->_fdClientsConfigs[client_sock] << std::endl << std::endl;
