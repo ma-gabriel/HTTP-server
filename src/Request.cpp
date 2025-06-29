@@ -30,12 +30,6 @@ Request::Request(void)
 Request::Request(int sock) : _sock(sock), _time(std::time(NULL))
 {
 	_config = Location(Epoll::instance().getFdClientConfigs()[sock]);
-	char buff[8192];
-	int val = recv(this->_sock, buff, sizeof(buff) - 1, MSG_DONTWAIT);
-	if (val == -1)
-		return ;
-	buff[val] = 0;
-	_raw += buff;
 
 #ifdef DEBUG
 	std::cout << this->_raw << std::endl;

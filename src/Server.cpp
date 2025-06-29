@@ -300,11 +300,7 @@ void Server::routineCGI()
 bool Server::createRequests(int sock)
 {
 	try {
-		std::map<int, Request>::iterator it = _requests.find(sock);
-		if (it == _requests.end())
-			_requests.insert(std::make_pair(sock, Request(sock)));
-		else
-			it->second.read();
+		_requests.at(sock).read();
 		return (_requests.at(sock).isValid());
 	}
 	catch (std::string &e)
