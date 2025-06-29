@@ -165,8 +165,9 @@ void CGI::flush(int fd, std::string text){
 		size_t length = text.find("Content-Length: ");
 		size_t type = text.find("Content-Type: ");
 		if (status != std::string::npos && status < body){
-			std::string status_line = "HTTP/1.1 " + text.substr(status + 8, text.find("\r\n", status) - 8);
-			text.erase(status, text.find("\r\n", status));
+			std::string buff = text.substr(status + 8, text.find("\r\n", status) - status - 8);
+			text.erase(status, buff.length() + 8);
+			std::string status_line = "HTTP/1.1 " + buff;
 			text = status_line + text;
 		}
 		else text = "HTTP/1.1 200 OK\r\n" + text;

@@ -2,18 +2,46 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Redirect Button</title>
+    <title>list of CGI</title>
 </head>
 <body>
-
-    <button onclick="window.location.href='/cgis/debug.py';">
-        CGI en python
+    <button onclick="window.location.href='/cgis/basicGET.py';">
+        python CGI
     </button>
-
 
     <button onclick="window.location.href='/cgis/WhatTimeIsItToday.js';">
-        CGI en javascript
+        Javascript CGI
     </button>
 
+
+    <button onclick="window.location.href='/cgis/No_header.php';">
+        Php CGI (and don't follow CGI norm)
+    </button>
+
+
+    <button onclick="window.location.href='/cgis/NoPermissions.py';">
+        No exec permission CGI
+    </button>
+
+    <button onclick="window.location.href='/cgis/cookies.py';">
+        Cookies gestion
+    </button>
+
+
+    <button onclick="window.location.href='/cgis/teapot.py';">
+        teapot (HTTP code 418)
+    </button>
+
+    <button onclick="window.location.href='/cgis/sleep.py';">
+        sleep few seconds (and the webserv works anyway)
+    </button>
+
+    <button onclick="window.location.href='/cgis/timeout.py';">
+        sleep an hour (timeout)
+    </button>
+
+    <button onclick="window.location.href='/cgis/debug.py';">
+        debugging python CGI
+    </button>
 </body>
 </html>
