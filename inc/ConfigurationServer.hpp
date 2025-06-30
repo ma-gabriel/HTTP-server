@@ -17,20 +17,23 @@ public:
     ~ConfigurationServer();
     ConfigurationServer(const ConfigurationServer &from);
     ConfigurationServer(std::vector<std::string>::iterator &it, const std::vector<std::string>::iterator &end);
-    const addrinfo *getAddr() const;
     const std::vector<std::string> &getServerNames() const;
-     std::map<std::string, Location> &getLocation();
+    std::map<std::string, Location> &getLocation();
     ConfigurationServer &operator=(const ConfigurationServer &from);
-     std::string &getPortString();
-     std::string &getHost();
+    std::string &getPortString();
+    std::string &getHost();
+    void setHost(const std::string &host);
+    unsigned int gethostValue();
 
 private:
     std::map<std::string, Location>  _location;
     std::vector<std::string>         _serverNames;
     std::string                      _portString;
     std::string                      _host;
+    unsigned int                     _hostValue;
     int                              _port;
     bool addAttributes(std::vector<std::string>::iterator &it, const std::vector<std::string>::iterator &end);
+    void createHostValue(const std::string &host);
     void addServerName(std::vector<std::string>::iterator &it, int n);
     void addListen(std::vector<std::string>::iterator &it, int n);
 };

@@ -13,12 +13,13 @@ class Parser
 
 private:
     std::string readFile(std::ifstream &file);
-    void addInfoChildren(std::map<int, ConfigurationServer> &config, Atributes &atributes);
-    std::map<int, ConfigurationServer> createAllServeur(std::vector<std::string> &allTokens);
-    Parser();
+    void addInfoChildren(std::map<long, std::vector<ConfigurationServer> > &config, Atributes &atributes);
+    std::map<long, std::vector<ConfigurationServer> > createAllServeur(std::vector<std::string> &allTokens);
+    void refactorAllServer(std::map<long, std::vector<ConfigurationServer> > &config);
+        Parser();
 
 public:
-    std::map<int, ConfigurationServer> ParseFile(const std::string &fileContent);
+    std::map<long, std::vector<ConfigurationServer> > ParseFile(const std::string &fileContent);
     std::vector<std::string> getAllToken(std::string &str);
     static Parser &instance();
     ~Parser();

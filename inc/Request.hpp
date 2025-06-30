@@ -13,6 +13,7 @@
 # include <iostream>
 # include "EHttpMethodeEnum.hpp"
 # include "Location.hpp"
+#include "ConfigurationServer.hpp"
 
 class Request
 {
@@ -51,6 +52,7 @@ public:
     };
 
 private:
+
     Request(void);
     // Private constructors
     // Private member functions
@@ -62,6 +64,7 @@ private:
     std::string extractOneLine(void);
     // Private attributs
     int			_sock;
+    ConfigurationServer &getConfigurationServer(std::vector<ConfigurationServer> &servers);
     std::string	_raw;
     std::string	_method;
     std::string	_path;

@@ -261,7 +261,7 @@ void Epoll::delAndCloseSocket(int sock)
 	this->_fdClientsConfigs.erase(sock);
 }
 
-std::map<int, ConfigurationServer> &Epoll::getFdClientConfigs() {
+std::map<int, std::vector<ConfigurationServer> > & Epoll::getFdClientConfigs() {
 	return this->_fdClientsConfigs;
 }
 // Overloaded print operator

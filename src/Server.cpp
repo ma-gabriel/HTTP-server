@@ -47,7 +47,7 @@ Server::~Server(void)
 {
 	// std::cout << GREY << "Server destructor called" << RESET << std::endl;
 	{
-		std::map<int, ConfigurationServer>::iterator it;
+		std::map<int, std::vector<ConfigurationServer> >::iterator it;
 		for (it = this->_instances.begin(); it != this->_instances.end(); it++)
 			close(it->first);
 	}
@@ -93,16 +93,6 @@ std::map<int, std::string> &Server::getResponses()
 std::map<int, Request> &Server::getRequests()
 {
 	return Server::instance()._requests;
-}
-
-// Getters
-int Server::getSocketFromPort(short port)
-{
-	std::map<int, ConfigurationServer>::iterator it;
-	for (it = this->_instances.begin(); it != this->_instances.end(); it++)
-		if (it->second.getPort() == port)
-			return (it->first);
-	return (0);
 }
 
 int Server::getClientNumber(void) const
@@ -327,7 +317,7 @@ bool Server::createRequests(int sock)
 }
 
 // Public member functions
-int Server::newInstance(ConfigurationServer server)
+int Server::newInstance(std::vector<ConfigurationServer> serverList)
 {
 	// Oppening socket for IPv4 communication (AF_INET),
 	// using TCP protocol (SOCK_STREAM)
@@ -353,7 +343,7 @@ int Server::newInstance(ConfigurationServer server)
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;    // IPv4 ou IPv6
 	hints.ai_socktype = SOCK_STREAM; // TCP
-	if (getaddrinfo("0.0.0.0", server.getPortString().c_str(), &hints, &result) != 0) {
+	if (getaddrinfo(serverList[0].getHost().c_str(), serverList[0].getPortString().c_str(), &hints, &result) != 0) {
 		perror("bind");
 		close(sock);
 	}
@@ -378,7 +368,7 @@ int Server::newInstance(ConfigurationServer server)
 	std::cout << "Server now listing on " << inet_ntoa(addr.sin_addr) << " port " << port << std::endl;
 #endif
 
-	this->_instances[sock] = server;
+	this->_instances[sock] = serverList;
 	return(sock);
 }
 
@@ -426,7 +416,7 @@ void Server::handleRequest(int sock)
 	Response::sendResponse(sock, Response::createResponse(req));
 }
 
-std::map<int, ConfigurationServer> Server::getInstances() {
+std::map<int, std::vector<ConfigurationServer> > Server::getInstances() {
 	return Server::instance()._instances;
 }
 

@@ -39,13 +39,7 @@ ConfigurationServer::ConfigurationServer(std::vector<std::string>::iterator &beg
     if (this->_port == 0) {
         throw std::runtime_error("Server requires a listen attribute.");
     }
-    // for (std::map<std::string, Location>::iterator it = this->_location.begin();
-    //      it != this->_location.end();
-    //      ++it)
-    // {
-    //     std::cout << "dedebug location : " << std::endl;
-    //     std::cout << it->second << std::endl;
-    // }
+
 }
 
 bool ConfigurationServer::addAttributes(std::vector<std::string>::iterator &it, const std::vector<std::string>::iterator &end){
@@ -80,6 +74,7 @@ void ConfigurationServer::addListen(std::vector<std::string>::iterator &it, int 
     if (n != 3)
         throw std::runtime_error("Server requires an address and a port.");
     this->_host = (*(++it)).c_str();
+    createHostValue(this->_host);
     if (!strIsDigit(*(++it))) {
         throw std::runtime_error("Port must be a digit.");
     }
@@ -92,7 +87,32 @@ void ConfigurationServer::addListen(std::vector<std::string>::iterator &it, int 
     this->_portString = it->c_str();
 }
 
+void ConfigurationServer::createHostValue(const std::string &host) {
+    this->_hostValue = 0;
+    size_t index = 0;
+    size_t findPoint;
+    int    octetValue;
 
+    for (size_t i = 0; i < 4; ++i) {
+        if (i != 3) {
+             findPoint = host.substr(index, host.size()).find('.');
+            if (findPoint == std::string::npos)
+                throw std::runtime_error("Host must be an IPv4 address.");
+        }
+        else
+            findPoint = host.size() - index;
+        if (findPoint > 3 || !strIsDigit(host.substr(index, findPoint)))
+            throw std::runtime_error("Host must be an IPv4 address.");
+        std::string octet = host.substr(index, findPoint);
+        octetValue = std::atoi(octet.c_str());
+        index += findPoint + 1;
+        if (octetValue < 0 || octetValue > 255) {
+            throw std::runtime_error("Octet value must be between 0 and 255.");
+
+        }
+        this->_hostValue = this->_hostValue * 256 + octetValue;
+    }
+}
 
 const std::vector<std::string> &ConfigurationServer::getServerNames() const {
     return _serverNames;
@@ -103,10 +123,8 @@ const std::vector<std::string> &ConfigurationServer::getServerNames() const {
 }
 
 std::string &ConfigurationServer::getPortString() {
-    return  this->_portString;
+    return this->_portString;
 }
-
-
 
 ConfigurationServer &ConfigurationServer::operator=(const ConfigurationServer &from){
     // std::cout << "ConfigurationServer aftectation operator called" << std::endl;
@@ -119,6 +137,7 @@ ConfigurationServer &ConfigurationServer::operator=(const ConfigurationServer &f
     this->_portString = from._portString;
     this->_serverNames = from._serverNames;
     this->_location = from._location;
+    this->_hostValue = from._hostValue;
     return (*this);
 }
 
@@ -131,6 +150,7 @@ Atributes(from)
     this->_port = from._port;
     this->_serverNames = from._serverNames;
     this->_location = from._location;
+    this->_hostValue = from._hostValue;
     this->_portString = from._portString;
 }
 
@@ -138,8 +158,16 @@ int ConfigurationServer::getPort() const {
     return _port;
 }
 
- std::string &ConfigurationServer::getHost()  {
+ std::string &ConfigurationServer::getHost() {
     return _host;
+}
+
+unsigned int  ConfigurationServer::gethostValue() {
+    return this->_hostValue;
+}
+
+void ConfigurationServer::setHost(const std::string &host) {
+    this->_host = host;
 }
 
 std::ostream &operator<<(std::ostream &os, ConfigurationServer &server) {
