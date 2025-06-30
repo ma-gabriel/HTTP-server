@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <cstdlib>
 #include <errno.h>
+#include <algorithm>
 #include <stdio.h>
 #include <sstream>
 #include <sys/socket.h>
@@ -106,7 +107,7 @@ std::string Request::getPath(void) const
 	return(this->_path);
 }
 
-Location Request::getConfig(void) const
+const Location &Request::getConfig(void) const
 {
 	return (_config);
 }
@@ -145,24 +146,26 @@ void Request::parseFirstLine()
 void Request::checkFirstLine()
 {
 	if (this->checkMethod() == false)
-		throw Request::BadRequestException("Bad HTTP method.");
+		throw 405;
 	if (this->_path.empty())
 		throw Request::BadRequestException("No path have been provided.");
 	if (this->_version.empty() || this->_version != "HTTP/1.1")
-		throw Request::BadRequestException("Bad HTTP version");
+		throw 505;
 }
 
 bool Request::checkMethod()
 {
-	if (this->_method.empty())
-		return (false);
-	if (this->_method == "GET")
+	const std::vector<EHttpMethode> &methods = _config.getHttpMethode();
+	if (_method == "GET" && std::find(methods.begin(), methods.end(), Get) != methods.end())
 		return (true);
-	if (this->_method == "POST")
+	if (_method == "DELETE" && std::find(methods.begin(), methods.end(), Delete) != methods.end())
 		return (true);
-	if (this->_method == "DELETE")
+	if (_method == "POST" && std::find(methods.begin(), methods.end(), Post) != methods.end())
 		return (true);
-	return (false);
+	if (_method == "Put" && std::find(methods.begin(), methods.end(), Put) != methods.end())
+		return (true);
+	return false;
+
 }
 
 void Request::extractHeaders()
@@ -200,16 +203,6 @@ std::string Request::extractOneLine()
 	return (line);
 }
 
-std::string getMethodString(EHttpMethode method) {
-	switch (method) {
-		case Post: return "POST";
-		case Get: return "GET";
-		case Delete: return "DELETE";
-		case Put: return "PUT";
-		default: return "UNKNOWN";
-	}
-};
-
 bool Request::isValid()
 {
 
@@ -229,13 +222,13 @@ bool Request::isValid()
 			_config = Location(Epoll::instance().getFdClientConfigs()[_sock]);
 	}
 	if (((long) (_raw.length() - _raw.find("\r\n\r\n") - 4) > _config.getMaxBodySize()))
-		throw std::string("ERROR413");
+		throw 413;
 	if (_raw.find("Content-Length: ") == std::string::npos)
 		return true; //because nothing useful after \r\n\r\n
 	if ((long) (_raw.length() - _raw.find("\r\n\r\n") - 4) == std::atol(_raw.c_str() + _raw.find("Content-Length: ") + 16))
 		return true;
 	if ((long) (_raw.length() - _raw.find("\r\n\r\n") - 4) > std::atol(_raw.c_str() + _raw.find("Content-Length: ") + 16))
-		throw std::string("ERROR400");
+		throw 400;
 	return false;
 }
 
@@ -245,4 +238,14 @@ static std::map<std::string, Location>::iterator decide_location(std::map<std::s
 		return dict.end();
 	path = path.substr(0, path.find('/', 1));
 	return dict.find(path);
+}
+
+std::string getMethodString(EHttpMethode method) {
+	switch (method) {
+		case Post: return "POST";
+		case Get: return "GET";
+		case Delete: return "DELETE";
+		case Put: return "PUT";
+		default: return "UNKNOWN";
+	}
 }

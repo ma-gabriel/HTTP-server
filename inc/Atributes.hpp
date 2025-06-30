@@ -1,7 +1,3 @@
-//
-// Created by rperrot on 5/20/25.
-//
-/* ************************************************************************** */
 
 #ifndef	AATTRIBUTES
 # define AATTRIBUTES

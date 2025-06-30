@@ -1,6 +1,4 @@
-//
-// Created by rperrot on 5/22/25.
-//
+
 
 #ifndef CONFIGURATIONSERVER_HPP
 # define CONFIGURATIONSERVER_HPP

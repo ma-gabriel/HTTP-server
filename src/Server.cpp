@@ -303,12 +303,18 @@ bool Server::createRequests(int sock)
 		_requests.at(sock).read();
 		return (_requests.at(sock).isValid());
 	}
-	catch (std::string &e)
+	catch (const int &e)
 	{
-		if (e == "ERROR400")
+		if (e == 400)
 			Response::sendResponse(sock, Response::error(400, "Bad Request", _requests.at(sock).getConfig().getErrorPages()));
-		if (e == "ERROR413")
+		else if (e == 413)
 			Response::sendResponse(sock, Response::error(413, "Request Entity Too Large", _requests.at(sock).getConfig().getErrorPages()));
+		else if (e == 405)
+			Response::sendResponse(sock, Response::error(405, "Method Not Allowed 	", _requests.at(sock).getConfig().getErrorPages()));
+		else if (e == 505)
+			Response::sendResponse(sock, Response::error(505, "HTTP Version not supported", _requests.at(sock).getConfig().getErrorPages()));
+		else
+			Response::sendResponse(sock, Response::error(500, "Something went wrong", _requests.at(sock).getConfig().getErrorPages()));
 		Server::getRequests().erase(sock);
 		return false;
 	}
