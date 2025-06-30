@@ -39,6 +39,9 @@ ConfigurationServer::ConfigurationServer(std::vector<std::string>::iterator &beg
     if (begin == end || *begin != "}") {
         throw std::runtime_error("after server is not right brace ");
     }
+    if (this->_port == 0) {
+        throw std::runtime_error("Server requires a listen attribute.");
+    }
     // for (std::map<std::string, Location>::iterator it = this->_location.begin();
     //      it != this->_location.end();
     //      ++it)

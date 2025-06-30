@@ -24,7 +24,7 @@ int main(int argc, char **argv)
 		Server &server = Server::instance();
 		std::map<int, ConfigurationServer> allServers = parser.ParseFile(argv[1]);
 		signal(SIGINT, sigint_handler);
-		std::cout <<  allServers[8080].getLocation()["/e"].getHttpMethode().size() << std::endl;
+
 
 		for (std::map<int, ConfigurationServer>::const_iterator it = allServers.begin();
 		     it != allServers.end(); ++it) {

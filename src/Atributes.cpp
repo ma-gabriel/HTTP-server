@@ -21,6 +21,7 @@ Atributes::Atributes(const Atributes &a)
     this->_httpMethode = a._httpMethode;
     this->_errorPages = a._errorPages;
     this->_root = a._root;
+    this->_index = a._index;
 }
 
 Atributes &Atributes::operator=(const Atributes &a) {

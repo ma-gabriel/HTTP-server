@@ -85,6 +85,8 @@ std::map<int, ConfigurationServer> Parser::createAllServeur(std::vector<std::str
             throw std::runtime_error("Unknow Attributes " + *it);
     }
     addInfoChildren(config, atributes);
+    if (config.empty())
+        throw std::runtime_error("No server configuration found in the file.");
     return config;
 }
 
