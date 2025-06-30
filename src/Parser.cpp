@@ -28,7 +28,6 @@ std::map<int, ConfigurationServer> Parser::ParseFile(const std::string &config_f
     std::string fileContent = this->readFile(file);
     std::vector<std::string> allTokens = getAllToken(fileContent);
     return createAllServeur(allTokens);
-
 }
 
 std::string Parser::readFile(std::ifstream &file)

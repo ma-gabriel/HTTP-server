@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <sstream>
+#include <cstdlib>
 #include "Epoll.hpp"
 
 #ifndef COLORS
@@ -99,7 +100,6 @@ std::string Response::createResponse(Request &req)
 		&& S_ISDIR(data.st_mode) != 0)
     {
         std::vector<std::string>::const_iterator it = req.getConfig().getIndex().begin();
-        std ::cout << *it << std::endl;
         for (; it != req.getConfig().getIndex().end(); it++){
             file = "." + root + *it;
             if (stat(file.c_str(), &data) == 0

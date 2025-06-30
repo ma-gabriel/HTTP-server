@@ -14,7 +14,7 @@
     </button>
 
 
-    <button onclick="window.location.href='/cgis/No_header.php';">
+    <button onclick="window.location.href='/cgis/No_headers.php';">
         Php CGI (and don't follow CGI norm)
     </button>
 
