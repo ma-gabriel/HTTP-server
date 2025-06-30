@@ -235,9 +235,8 @@ bool Request::isValid()
 
 static std::map<std::string, Location>::iterator decide_location(std::map<std::string, Location> &dict, std::string path)
 {
-	if (path.find('/', 1) == std::string::npos)
-		return dict.end();
-	path = path.substr(0, path.find('/', 1));
+	if (path.find('/', 1) != std::string::npos)
+		path = path.substr(0, path.find('/', 1));
 	return dict.find(path);
 }
 
