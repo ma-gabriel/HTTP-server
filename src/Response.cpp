@@ -99,9 +99,8 @@ std::string Response::createResponse(Request &req)
 		&& S_ISDIR(data.st_mode) != 0)
     {
         std::vector<std::string>::const_iterator it = req.getConfig().getIndex().begin();
-        std ::cout << *it << std::endl;
         for (; it != req.getConfig().getIndex().end(); it++){
-            file = "." + root + *it;
+            file = "." + root + "/" + *it;
             if (stat(file.c_str(), &data) == 0
                 && S_ISREG(data.st_mode) != 0
                 && access(file.c_str(), R_OK) == 0)

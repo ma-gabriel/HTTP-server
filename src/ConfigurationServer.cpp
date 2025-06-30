@@ -1,6 +1,3 @@
-//
-// Created by rperrot on 5/22/25.
-//
 
 #include "ConfigurationServer.hpp"
 #include <netdb.h>

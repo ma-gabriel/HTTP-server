@@ -31,7 +31,7 @@ public:
     std::string getBody(void) const;
     time_t getTime(void) const;
     std::string getMethod(void) const;
-    Location getConfig(void) const;
+    const Location &getConfig(void) const;
     std::map<std::string, std::string> getHeaders(void) const;
     // Setters
     // Public member functions
