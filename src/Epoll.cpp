@@ -232,6 +232,7 @@ void Epoll::modFd(int fd, bool in)
 
 void Epoll::delAndCloseSocket(int sock)
 {
+    Server::getRequests().erase(sock);
 	Server::getResponses().erase(sock);
 	Server::instance().killCGIsock(sock);
 
