@@ -178,8 +178,6 @@ void Atributes::addHttpIndex(std::vector<std::string>::iterator &it, int n) {
 }
 
 void Atributes::addErrorPages(std::vector<std::string>::iterator &it, int n) {
-    if (!this->_errorPages.empty())
-        throw std::runtime_error("Error pages already set");
     std::vector<int> errorCodes;
     if (n < 3 ) {
         throw std::runtime_error("Error pages attribute requires pairs of error code and page.");
