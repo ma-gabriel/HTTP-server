@@ -162,7 +162,7 @@ bool Request::checkMethod()
 		return (true);
 	if (_method == "POST" && std::find(methods.begin(), methods.end(), Post) != methods.end())
 		return (true);
-	if (_method == "Put" && std::find(methods.begin(), methods.end(), Put) != methods.end())
+	if (_method == "PUT" && std::find(methods.begin(), methods.end(), Put) != methods.end())
 		return (true);
 	return false;
 
@@ -205,13 +205,13 @@ std::string Request::extractOneLine()
 
 bool Request::isValid()
 {
-
 	if (_raw.find("\r\n\r\n") == std::string::npos)
 		return false; //because headers not finished
-	if (_path.empty())
+	if (_method.empty())
 	{
 		parseFirstLine();
-		checkFirstLine();
+		if (_method == "")
+			throw 405;
 		std::map<std::string, Location> &dict = Epoll::instance().getFdClientConfigs()[_sock].getLocation();
 		std::map<std::string, Location>::iterator dict_iterator = dict.end();
 
@@ -220,6 +220,7 @@ bool Request::isValid()
 			_config = dict_iterator->second;
 		else
 			_config = Location(Epoll::instance().getFdClientConfigs()[_sock]);
+		checkFirstLine();
 	}
 	if (((long) (_raw.length() - _raw.find("\r\n\r\n") - 4) > _config.getMaxBodySize()))
 		throw 413;
