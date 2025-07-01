@@ -145,13 +145,18 @@ bool HandleUpload(Request &req)
         Response::sendResponse(req.getSock, Response::error(400, "Bad Request", req.getConfig().getErrorPages()));
         return true;
     }
+
+    std::vector<std::string> filenames;
+    std::vector<std::string> bodies;
     size_t first = req.getBody().find(boundary);
     size_t second = req.getBody().find(boundary, first);
+    while (first != std::string::npos && second != std::string::npos)
+    {
 
-    std::vector<std::string> names;
-    std::vector<std::string> filenames;
-    std::vector<std::string> names;
-    while ()
+
+
+        if (second)
+    }
 }
 // Private member functions
 
