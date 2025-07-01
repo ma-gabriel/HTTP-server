@@ -255,7 +255,7 @@ void Server::routineReq()
 {
 	std::vector <int> to_remove;
 	for (std::map<int, Request>::iterator it = _requests.begin(); it != _requests.end(); it++){
-		if (it->second.getTime() + 3 < std::time(NULL)){
+		if (it->second.getTime() + 5 < std::time(NULL)){
 			to_remove.push_back(it->first);
 		}
 	}

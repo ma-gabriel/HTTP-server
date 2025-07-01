@@ -40,12 +40,11 @@ Request::Request(int sock) : _sock(sock), _time(std::time(NULL))
 
 void Request::read()
 {
-	char buff[8192];
+	char buff[65536];
 	int val = recv(this->_sock, buff, sizeof(buff) - 1, MSG_DONTWAIT);
 	if (val == -1)
 		return ;
-	buff[val] = 0;
-	_raw += buff;
+	_raw.append(buff, val);
 }
 
 Request::Request(const Request &from)

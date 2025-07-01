@@ -42,7 +42,7 @@ document.getElementById('dropzone').addEventListener('drop', function(e) {
         if (response.ok) {
             alert('File uploaded successfully.');
         } else {
-            alert('Upload failed.');
+            alert('upload failed with status: ' + response.status);
         }
     }).catch(err => {
         alert('Error: ' + err);
