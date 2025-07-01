@@ -213,7 +213,6 @@ ConfigurationServer &Request::getConfigurationServer(std::vector<ConfigurationSe
     std::string host = _raw.substr(iHost + 6, endHost - iHost - 6);
     if (host.find(':') != std::string::npos)
         host = host.substr(0, host.find(':'));
-    std::cout << "Host: " << host << std::endl;
     for (std::vector<ConfigurationServer>::iterator it = servers.begin(); it != servers.end(); ++it)
     {
         for (std::vector<std::string>::const_iterator serverName = it->getServerNames().begin(); serverName != it->getServerNames().end(); ++serverName)
@@ -238,8 +237,6 @@ bool Request::isValid()
 		ConfigurationServer config = getConfigurationServer(Epoll::instance().getFdClientConfigs()[_sock]);
         std::map<std::string, Location> &dict = config.getLocation();
 		std::map<std::string, Location>::iterator dict_iterator = dict.end();
-        std::cout << "Request path: " << _path << std::endl;
-        parseFirstLine();
 		dict_iterator = decide_location(dict, _path);
 		if (dict_iterator != dict.end())
 			_config = dict_iterator->second;

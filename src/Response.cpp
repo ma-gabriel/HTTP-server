@@ -135,28 +135,19 @@ bool HandleUpload(Request &req)
         return false;
     size_t b = type_it->second.find("boundary=");
     if (b == std::string::npos){
-        Response::sendResponse(req.getSock, Response::error(400, "Bad Request", req.getConfig().getErrorPages()));
+        Response::sendResponse(req.getSock(), Response::error(400, "Bad Request", req.getConfig().getErrorPages()));
         return true;
     }
     i = type_it->second.find(";", b);
     if (i == std::string::npos) i = type_it->second.length();
     std::string boundary = type_it->second.substr(b + 9, i - (b + 9));
     if (boundary.empty()){
-        Response::sendResponse(req.getSock, Response::error(400, "Bad Request", req.getConfig().getErrorPages()));
+        Response::sendResponse(req.getSock(), Response::error(400, "Bad Request", req.getConfig().getErrorPages()));
         return true;
     }
 
-    std::vector<std::string> filenames;
-    std::vector<std::string> bodies;
-    size_t first = req.getBody().find(boundary);
-    size_t second = req.getBody().find(boundary, first);
-    while (first != std::string::npos && second != std::string::npos)
-    {
-
-
-
-        if (second)
-    }
+    std::map<std::string, std::string> files;
+    return true;
 }
 // Private member functions
 
