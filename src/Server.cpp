@@ -408,11 +408,9 @@ void Server::handleRequest(int sock)
 #endif
 		return ;
 	}
-
-	if (doCGI(req) == true){
+	if (doCGI(req)){
 		return ;
 	}
-
 	Response::sendResponse(sock, Response::createResponse(req));
 }
 

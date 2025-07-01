@@ -100,7 +100,7 @@ void Epoll::routine()
 	}
 	for (int i = 0; i < event_quant; i++)
 	{
-		if (serv.isCGI(this->_events[i].data.fd) == true) {
+		if (serv.isCGI(this->_events[i].data.fd)) {
 			serv.handleCGI(this->_events[i]);
 			continue;
 		}
@@ -139,7 +139,7 @@ void Epoll::routine()
 void Epoll::handleEvents(int sock)
 {
 	Server &serv = Server::instance();
-	if (serv.isServSocket(sock) == true)
+	if (serv.isServSocket(sock))
 		this->handleNewClients(sock);
 	else if (serv.createRequests(sock))		
 	{
