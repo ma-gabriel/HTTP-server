@@ -20,10 +20,9 @@ int main(int argc, char **argv)
 		return (1);
 	try {
 		Epoll &epoll = Epoll::instance();
-    Parser &parser = Parser::instance();
+		Parser &parser = Parser::instance();
 		Server &server = Server::instance();
 		std::map<long, std::vector<ConfigurationServer> > allServers = parser.ParseFile(argv[1]);
-    (void)allServers;
 		signal(SIGINT, sigint_handler);
 		for (std::map<long, std::vector<ConfigurationServer> >::const_iterator it = allServers.begin();
 		     it != allServers.end(); ++it) {

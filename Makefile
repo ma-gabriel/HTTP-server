@@ -53,7 +53,6 @@ clean:
 	@rm -fr $(OBJ_PATH)
 
 fclean: clean
-	@rm -rf static/CGI-scripts/uploads
 	@rm -rf static/uploads/*
 	@rm -rf $(NAME)
 

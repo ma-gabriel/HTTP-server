@@ -215,17 +215,15 @@ bool Response::removeUpload(Request &req)
 {
     if (req.getMethod() != "DELETE")
         return false;
-    std::string file = req.getConfig().getRoot() + req.getPath().substr(req.getConfig().getPath().length());
-    file.erase(0, 1);
+    std::string file = req.getPath();
+    size_t i = req.getPath().find_last_of("/");
+    if (i != std::string::npos)
+        file = "static/uploads/" + req.getPath().substr(i + 1);
     size_t query = file.find('?');
     if (query != std::string::npos)
         file.erase(query);
     if (access(file.c_str(), F_OK)){
         Response::sendResponse(req.getSock(), Response::error(404, "Not Found", req.getConfig().getErrorPages()));
-        return true;
-    }
-    if (file.compare(0, 15, "static/uploads/")){
-        Response::sendResponse(req.getSock(), Response::error(403, "Forbidden", req.getConfig().getErrorPages()));
         return true;
     }
     std::remove(file.c_str());

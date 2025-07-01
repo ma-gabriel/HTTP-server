@@ -323,10 +323,7 @@ int Server::newInstance(std::vector<ConfigurationServer> serverList)
 	// using TCP protocol (SOCK_STREAM)
 	int sock = socket(AF_INET, SOCK_STREAM, 0);
 	if (sock == -1)
-	{
-		perror("socket");
-		return(-1);
-	}
+		throw std::runtime_error(std::string("socket: ") + strerror(errno));
 
 	// Enabling (opt_value = 1) different options on socket,
 	// to reuse same addresss multiple time (SO_REUSEADDR), and
@@ -334,7 +331,11 @@ int Server::newInstance(std::vector<ConfigurationServer> serverList)
 	// to prevent port/address lock after innatended program end
 	int opt_value = 1;
 	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &opt_value, sizeof(int)) == -1)
+	{
 		perror("setsockopt");
+		close(sock);
+		throw std::runtime_error(std::string("setsockopt: ") + strerror(errno));
+	}
 
 	// Creating IPv4 (AF_INET) structure,
 	// to listen on 0.0.0.0 address (INADDR_ANY)
@@ -346,23 +347,22 @@ int Server::newInstance(std::vector<ConfigurationServer> serverList)
 	if (getaddrinfo(serverList[0].getHost().c_str(), serverList[0].getPortString().c_str(), &hints, &result) != 0) {
 		perror("bind");
 		close(sock);
+		throw std::runtime_error(std::string("getaddrinfo: ") + strerror(errno));
 	}
 	// Assinging the newly created socket to the address and port
 	int bindStatus = bind(sock,  result->ai_addr, result->ai_addrlen);
 	freeaddrinfo(result);
 	if (bindStatus == -1)
 	{
-		perror("bind");
 		close(sock);
-		return(-1);
+		throw std::runtime_error(std::string("bind: ") + strerror(errno));
 	}
 	// Set the newly created and binded socket to listen,
 	// and set max client listening queue to maximum (SOMAXCONN)
 	if (listen(sock, SOMAXCONN) == -1)
 	{
-		perror("listen");
 		close(sock);
-		return(-1);
+		throw std::runtime_error(std::string("listen: ") + strerror(errno));
 	}
 #ifdef DEBUG
 	std::cout << "Server now listing on " << inet_ntoa(addr.sin_addr) << " port " << port << std::endl;
@@ -408,11 +408,11 @@ void Server::handleRequest(int sock)
 #endif
 		return ;
 	}
+	if (doCGI(req))
+		return;
 	if (Response::handleUpload(req))
 		return;
 	if (Response::removeUpload(req))
-		return;
-	if (doCGI(req))
 		return;
 	Response::sendResponse(sock, Response::createResponse(req));
 }
