@@ -32,7 +32,6 @@ public:
 	~Server(void);
 	// Getters
 	int getClientNumber(void) const;
-	int getSocketFromPort(short port);
 
 #ifdef DEBUG
 	char* getClientAddress(int sock) const;
@@ -43,12 +42,12 @@ public:
 	// Checkers
 	bool isServSocket(int fd) const;
 	// Public member functions
-	int newInstance(ConfigurationServer server);
+    int newInstance(std::vector<ConfigurationServer> serverList);
 	int newClient(int sock);
 	void handleRequest(int sock);
 	bool createRequests(int fd);
 	void routineReq();
-	static std::map<int, ConfigurationServer> getInstances();
+	static std::map<int, std::vector<ConfigurationServer> > getInstances();
 	static std::map<int, Request> &getRequests();
 	static std::map<int, std::string> &getResponses();
 
@@ -74,7 +73,7 @@ private:
 	Server &operator=(const Server &from);
 	// data members
 	std::map<int, CGI::infos> _CGIs;
-	std::map<int, ConfigurationServer> _instances;
+	std::map<int, std::vector<ConfigurationServer> > _instances;
 	std::deque<int> _clients;
 	std::map<int, Request> _requests;
 	std::map<int, std::string> _responses;

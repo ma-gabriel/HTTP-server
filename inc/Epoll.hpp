@@ -43,13 +43,13 @@ public:
     void addFd(int fd, bool in = true);
     void modFd(int fd, bool in = false);
     void delAndCloseSocket(int sock);
-    std::map<int, ConfigurationServer> &getFdClientConfigs();
+    std::map<int, std::vector<ConfigurationServer> > & getFdClientConfigs();
 
 // Static Variable
     static bool isRunning;
 
 private:
-    std::map<int, ConfigurationServer> _fdClientsConfigs;
+    std::map<int, std::vector<ConfigurationServer> > _fdClientsConfigs;
     int _fd;
 #ifdef LINUX
     struct epoll_event *_events;

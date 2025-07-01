@@ -30,7 +30,7 @@ Request::Request(void)
 
 Request::Request(int sock) : _sock(sock), _time(std::time(NULL))
 {
-	_config = Location(Epoll::instance().getFdClientConfigs()[sock]);
+//	_config = Location(Epoll::instance().getFdClientConfigs()[sock][0]);
 
 #ifdef DEBUG
 	std::cout << this->_raw << std::endl;
@@ -144,7 +144,7 @@ void Request::parseFirstLine()
 
 void Request::checkFirstLine()
 {
-	if (this->checkMethod() == false)
+	if (!this->checkMethod())
 		throw 405;
 	if (this->_path.empty())
 		throw Request::BadRequestException("No path have been provided.");
@@ -202,6 +202,29 @@ std::string Request::extractOneLine()
 	return (line);
 }
 
+ConfigurationServer &Request::getConfigurationServer(std::vector<ConfigurationServer> &servers)
+{
+    size_t iHost = _raw.find("Host: ");
+    if (iHost == std::string::npos)
+        throw 400;
+     size_t endHost = _raw.find("\r\n", iHost);
+     if (endHost == std::string::npos)
+         throw 400;
+    std::string host = _raw.substr(iHost + 6, endHost - iHost - 6);
+    if (host.find(':') != std::string::npos)
+        host = host.substr(0, host.find(':'));
+    std::cout << "Host: " << host << std::endl;
+    for (std::vector<ConfigurationServer>::iterator it = servers.begin(); it != servers.end(); ++it)
+    {
+        for (std::vector<std::string>::const_iterator serverName = it->getServerNames().begin(); serverName != it->getServerNames().end(); ++serverName)
+        {
+            if (*serverName == host || (host.empty() && *serverName == ""))
+                return *it;
+        }
+    }
+    return  servers[0];
+}
+
 bool Request::isValid()
 {
 	if (_raw.find("\r\n\r\n") == std::string::npos)
@@ -211,15 +234,18 @@ bool Request::isValid()
 		parseFirstLine();
 		if (_method == "")
 			throw 405;
-		std::map<std::string, Location> &dict = Epoll::instance().getFdClientConfigs()[_sock].getLocation();
-		std::map<std::string, Location>::iterator dict_iterator = dict.end();
 
+		ConfigurationServer config = getConfigurationServer(Epoll::instance().getFdClientConfigs()[_sock]);
+        std::map<std::string, Location> &dict = config.getLocation();
+		std::map<std::string, Location>::iterator dict_iterator = dict.end();
+        std::cout << "Request path: " << _path << std::endl;
+        parseFirstLine();
 		dict_iterator = decide_location(dict, _path);
 		if (dict_iterator != dict.end())
 			_config = dict_iterator->second;
 		else
-			_config = Location(Epoll::instance().getFdClientConfigs()[_sock]);
-		checkFirstLine();
+			_config = Location(config);
+        checkFirstLine();
 	}
 	if (((long) (_raw.length() - _raw.find("\r\n\r\n") - 4) > _config.getMaxBodySize()))
 		throw 413;
