@@ -24,8 +24,10 @@ SRCS_FILES		= main.cpp \
                   utils/strNoCase.cpp \
                   utils/strIsdigit.cpp \
                   exceptions/LocationException.cpp \
+                  Redirection.cpp \
                   Epoll.cpp \
-                  CGI.cpp
+                  CGI.cpp \
+                  addRedirect.cpp \
 
 
 ifeq ($(OS), Linux)

@@ -1,0 +1,21 @@
+#include "Response.hpp"
+
+#include <sstream>
+
+ std::string Response::createResponseRedirect(Request &request){
+    std::string  path = request.getPath();
+    std::string  locationPath = request.getConfig().getPath();
+    std::string newRedirection = "http://" + request.getHeaders().at("Host") + request.getConfig().getRedirection().getPath();
+    std::cout << "Redirection to: " << newRedirection << std::endl;
+    (void)request;
+
+     std::ostringstream oss;
+     oss << std::dec
+         << "HTTP/1.1 " << request.getConfig().getRedirection().getCode() << " "
+         << request.getConfig().getRedirection().getMessageCodeHttp() << "\r\n"
+         << "Location: " << newRedirection << "\r\n"
+         << "Content-Type: text/html\r\n"
+         << "Content-Length: 0\r\n"
+         << "\r\n";
+     return oss.str();
+}

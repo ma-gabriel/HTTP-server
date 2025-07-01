@@ -408,6 +408,11 @@ void Server::handleRequest(int sock)
 #endif
 		return ;
 	}
+
+    if (req.getConfig().getRedirection().getCode() != -1) {
+        Response::sendResponse(sock, Response::createResponseRedirect(req));
+        return;
+    }
 	if (doCGI(req)){
 		return ;
 	}

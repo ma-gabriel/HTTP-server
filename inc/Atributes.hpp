@@ -7,6 +7,7 @@
 # include <map>
 # include "utils.hpp"
 # include "EHttpMethodeEnum.hpp"
+# include "Redirection.hpp"
 
 enum Boolean {
     FALSE, TRUE, Null
@@ -22,6 +23,7 @@ private:
     void addErrorPages(std::vector<std::string>::iterator &it, int n);
     void addHttpIndex(std::vector<std::string>::iterator &it, int n);
     void addClientMaxBodySize(std::vector<std::string>::iterator &it, int n);
+    void addReturn(std::vector<std::string>::iterator &it, int n);
 
 protected:
     std::string					_root;
@@ -31,12 +33,13 @@ protected:
     std::vector <std::string>	_index;
     std::vector <std::string>	_cgi;
     int                         _maxBodySize;
+    Redirection                 _redirection;
     int getSizeLine(std::vector<std::string>::iterator it, const std::vector<std::string>::iterator &end);
 
 public:
     Atributes();
-    Atributes(const Atributes &a);
-    Atributes &operator=(const Atributes &a);
+    Atributes(const Atributes &attributes);
+    Atributes &operator=(const Atributes &atributes);
     virtual ~Atributes();
     virtual bool addAttributes(std::vector<std::string>::iterator &it, const std::vector<std::string>::iterator &end);
     void fillAtributes(Atributes &atributes);
@@ -45,6 +48,8 @@ public:
     const std::vector<EHttpMethode> &getHttpMethode() const;
     const std::vector<std::string> &getIndex() const;
     bool isAutoIndex() const;
+    Boolean getAutoIndex() const;
+    const Redirection &getRedirection() const;
     const std::vector<std::string> &getCgi() const;
     int getMaxBodySize() const;
 };

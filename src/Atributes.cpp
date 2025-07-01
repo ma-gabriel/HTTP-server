@@ -9,30 +9,31 @@ Atributes::Atributes(): _autoIndex(Null), _maxBodySize(0){}
 
 Atributes::~Atributes() {}
 
-Atributes::Atributes(const Atributes &a)
+Atributes::Atributes(const Atributes &attributes)
 {
-    this->_autoIndex = a._autoIndex;
-    this->_maxBodySize = a._maxBodySize;
-    this->_cgi = a._cgi;
-    this->_autoIndex = a._autoIndex;
-    this->_httpMethode = a._httpMethode;
-    this->_errorPages = a._errorPages;
-    this->_root = a._root;
-    this->_index = a._index;
+    this->_autoIndex = attributes._autoIndex;
+    this->_maxBodySize = attributes._maxBodySize;
+    this->_cgi = attributes._cgi;
+    this->_autoIndex = attributes._autoIndex;
+    this->_httpMethode = attributes._httpMethode;
+    this->_errorPages = attributes._errorPages;
+    this->_root = attributes._root;
+    this->_index = attributes._index;
+    this->_redirection = attributes._redirection;
 }
 
-Atributes &Atributes::operator=(const Atributes &a) {
-    if (this == &a)
+Atributes &Atributes::operator=(const Atributes &atributes) {
+    if (this == &atributes)
         return *this;
-    this->_autoIndex = a._autoIndex;
-    this->_maxBodySize = a._maxBodySize;
-    this->_cgi = a._cgi;
-    this->_httpMethode = a._httpMethode;
-    this->_errorPages = a._errorPages;
-    this->_root = a._root;
-    this->_index = a._index;
+    this->_autoIndex = atributes._autoIndex;
+    this->_maxBodySize = atributes._maxBodySize;
+    this->_cgi = atributes._cgi;
+    this->_httpMethode = atributes._httpMethode;
+    this->_errorPages = atributes._errorPages;
+    this->_root = atributes._root;
+    this->_index = atributes._index;
+    this->_redirection = atributes._redirection;
     return *this;
-
 }
 
 const std::string &Atributes::getRoot() const
@@ -75,6 +76,7 @@ bool Atributes::addAttributes(std::vector<std::string>::iterator &it, const std:
     actions["limit_except"] = &Atributes::addHttpIndex;
     actions["client_max_body_size"] = &Atributes::addClientMaxBodySize;
     actions["cgi"] = &Atributes::addCgi;
+    actions["return"] = &Atributes::addReturn;
 
     std::transform(it->begin(), it->end(), it->begin(),
                   toLowerChar);
@@ -259,4 +261,32 @@ void Atributes::fillAtributes(Atributes &atributes) {
         this->_cgi = atributes._cgi;
     if (this->_index.empty())
         this->_index = atributes._index;
+    if (this->_redirection.getCode() == -1)
+        this->_redirection = atributes._redirection;
+}
+
+void Atributes::addReturn(std::vector<std::string>::iterator &it, int n) {
+    if (this->_redirection.getCode() != -1) {
+        throw std::runtime_error("Redirection already set.");
+    }
+    if (n != 3) {
+        throw std::runtime_error("Return attribute requires a code and a path.");
+    }
+    if (!strIsDigit(*(++it))) {
+        throw std::runtime_error("Return code must be a digit.");
+    }
+    double codeDouble = std::strtod((*it).c_str(), NULL);
+    int code = static_cast<int>(codeDouble);
+    if (code < 300 || code >= 400) {
+        throw std::runtime_error("Return code must be in the range [300, 400].");
+    }
+    this->_redirection = Redirection(*(++it), code);
+}
+
+Boolean Atributes::getAutoIndex() const {
+    return _autoIndex;
+}
+
+const Redirection &Atributes::getRedirection() const {
+    return _redirection;
 }
