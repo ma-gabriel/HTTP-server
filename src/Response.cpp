@@ -121,6 +121,38 @@ std::string Response::createResponse(Request &req)
     << res.length() << "\r\n\r\n")).str() + res;
 }
 
+bool HandleUpload(Request &req)
+{
+    if (req.getMethod() != "POST" && req.getMethod() != "PUT")
+        return false;
+    std::map<std::string, std::string>::const_iterator type_it = req.getHeaders().find("Content-Type");
+    if (type_it == req.getHeaders().end())
+        return false;
+    std::string type = type_it->second;
+    size_t i = type_it->second.find(";");
+    if (i != std::string::npos) type.erase(i);
+    if (type != "multipart/form-data" && type != "form-data")
+        return false;
+    size_t b = type_it->second.find("boundary=");
+    if (b == std::string::npos){
+        Response::sendResponse(req.getSock, Response::error(400, "Bad Request", req.getConfig().getErrorPages()));
+        return true;
+    }
+    i = type_it->second.find(";", b);
+    if (i == std::string::npos) i = type_it->second.length();
+    std::string boundary = type_it->second.substr(b + 9, i - (b + 9));
+    if (boundary.empty()){
+        Response::sendResponse(req.getSock, Response::error(400, "Bad Request", req.getConfig().getErrorPages()));
+        return true;
+    }
+    size_t first = req.getBody().find(boundary);
+    size_t second = req.getBody().find(boundary, first);
+
+    std::vector<std::string> names;
+    std::vector<std::string> filenames;
+    std::vector<std::string> names;
+    while ()
+}
 // Private member functions
 
 void Response::sendResponse(int sock, std::string content)

@@ -7,7 +7,7 @@ import cgitb
 
 cgitb.enable()  # Show traceback in browser on error
 
-print("Content-Type: text/plain\r\n")
+print("Content-Type: text/plain\r\n\r")
 
 # Make sure upload dir exists
 upload_dir = "./uploads"

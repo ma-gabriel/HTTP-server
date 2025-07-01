@@ -91,7 +91,7 @@ std::time_t Request::getTime(void) const
 	return(this->_time);
 }
 
-std::string Request::getBody(void) const
+const std::string &Request::getBody(void) const
 {
 	return (this->_body);
 }
@@ -116,7 +116,7 @@ std::string Request::getMethod(void) const
 	return(this->_method);
 }
 
-std::map<std::string, std::string> Request::getHeaders(void) const
+const std::map<std::string, std::string> &Request::getHeaders(void) const
 {
 	return(this->_headers);
 }
