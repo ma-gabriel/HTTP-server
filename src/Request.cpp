@@ -232,14 +232,10 @@ bool Request::isValid()
 	if (_method.empty())
 	{
 		parseFirstLine();
-		if (_method == "")
-			throw 405;
-
 		ConfigurationServer config = getConfigurationServer(Epoll::instance().getFdClientConfigs()[_sock]);
         std::map<std::string, Location> &dict = config.getLocation();
 		std::map<std::string, Location>::iterator dict_iterator = dict.end();
         std::cout << "Request path: " << _path << std::endl;
-        parseFirstLine();
 		dict_iterator = decide_location(dict, _path);
 		if (dict_iterator != dict.end())
 			_config = dict_iterator->second;
