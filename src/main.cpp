@@ -24,10 +24,9 @@ int main(int argc, char **argv)
 		Server &server = Server::instance();
 		std::map<long, std::vector<ConfigurationServer> > allServers = parser.ParseFile(argv[1]);
 		signal(SIGINT, sigint_handler);
-		for (std::map<long, std::vector<ConfigurationServer> >::const_iterator it = allServers.begin();
-		     it != allServers.end(); ++it) {
+		std::map<long, std::vector<ConfigurationServer> >::const_iterator it;
+		for (it = allServers.begin(); it != allServers.end(); ++it)
 			epoll.addFd(server.newInstance(it->second));
-		}
 		while (Epoll::isRunning)
 				epoll.routine();
 	}

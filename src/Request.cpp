@@ -144,11 +144,11 @@ void Request::parseFirstLine()
 
 void Request::checkFirstLine()
 {
-	if (!this->checkMethod())
+	if (!checkMethod())
 		throw 405;
-	if (this->_path.empty())
-		throw Request::BadRequestException("No path have been provided.");
-	if (this->_version.empty() || this->_version != "HTTP/1.1")
+	if (!checkPath())
+		throw 400;
+	if (_version != "HTTP/1.1")
 		throw 505;
 }
 
@@ -164,7 +164,25 @@ bool Request::checkMethod()
 	if (_method == "PUT" && std::find(methods.begin(), methods.end(), Put) != methods.end())
 		return (true);
 	return false;
+}
 
+bool Request::checkPath()
+{
+	if (_path.find("//") != std::string::npos)
+		return false;
+	if (!_path.compare(0, 3, "../"))
+		return false;
+	if (!_path.compare(0, 2, "./"))
+		return false;
+	if (!_path.compare(_path.length() - 3, 3, "/.."))
+		return false;
+	if (!_path.compare(_path.length() - 2, 2, "/."))
+		return false;
+	if (_path.find("/../") != std::string::npos)
+		return false;
+	if (_path.find("/./") != std::string::npos)
+		return false;
+	return true;
 }
 
 void Request::extractHeaders()
@@ -183,10 +201,8 @@ std::string Request::extractHeaderKey(std::string& line)
 	std::string::size_type colon_pos = line.find(":");
 	if (colon_pos == std::string::npos)
 		throw Request::BadRequestException("Bad header formating");
-
 	std::string key = line.substr(0, colon_pos);
 	line.erase(0, colon_pos + 2);
-
 	return (key);
 }
 
@@ -195,7 +211,6 @@ std::string Request::extractOneLine()
 	std::string::size_type line_end = this->_raw.find("\r\n");
 	if (line_end == std::string::npos)
 		throw Request::BadRequestException("End-of-line error");
-
 	std::string line = this->_raw.substr(0, line_end);
 	this->_raw.erase(0, line_end + 2);
 
@@ -204,6 +219,8 @@ std::string Request::extractOneLine()
 
 ConfigurationServer &Request::getConfigurationServer(std::vector<ConfigurationServer> &servers)
 {
+	// https://datatracker.ietf.org/doc/html/rfc7230#section-5.4 
+	// "A client MUST send a Host header field in all HTTP/1.1 request message"
     size_t iHost = _raw.find("Host: ");
     if (iHost == std::string::npos)
         throw 400;
@@ -233,7 +250,6 @@ bool Request::isValid()
 		parseFirstLine();
 		if (_method == "")
 			throw 405;
-
 		ConfigurationServer config = getConfigurationServer(Epoll::instance().getFdClientConfigs()[_sock]);
         std::map<std::string, Location> &dict = config.getLocation();
 		std::map<std::string, Location>::iterator dict_iterator = dict.end();
@@ -246,8 +262,11 @@ bool Request::isValid()
 	}
 	if (((long) (_raw.length() - _raw.find("\r\n\r\n") - 4) > _config.getMaxBodySize()))
 		throw 413;
-	if (_raw.find("Content-Length: ") == std::string::npos)
-		return true; //because nothing useful after \r\n\r\n
+	if (_raw.find("Content-Length: ") == std::string::npos){
+		if (_raw.find("\r\n\r\n") == _raw.length() - 4)
+			return true;
+		throw 400;
+	}
 	if ((long) (_raw.length() - _raw.find("\r\n\r\n") - 4) == std::atol(_raw.c_str() + _raw.find("Content-Length: ") + 16))
 		return true;
 	if ((long) (_raw.length() - _raw.find("\r\n\r\n") - 4) > std::atol(_raw.c_str() + _raw.find("Content-Length: ") + 16))
