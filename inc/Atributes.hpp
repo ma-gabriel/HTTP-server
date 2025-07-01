@@ -32,7 +32,7 @@ protected:
     Boolean						_autoIndex;
     std::vector <std::string>	_index;
     std::vector <std::string>	_cgi;
-    int                         _maxBodySize;
+    size_t                      _maxBodySize;
     Redirection                 _redirection;
     int getSizeLine(std::vector<std::string>::iterator it, const std::vector<std::string>::iterator &end);
 
@@ -51,7 +51,7 @@ public:
     Boolean getAutoIndex() const;
     const Redirection &getRedirection() const;
     const std::vector<std::string> &getCgi() const;
-    int getMaxBodySize() const;
+    size_t getMaxBodySize() const;
 };
 
 std::ostream &operator<<(std::ostream &os, const Atributes &attributes);

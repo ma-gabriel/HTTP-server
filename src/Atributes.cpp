@@ -112,8 +112,8 @@ void Atributes::addClientMaxBodySize(std::vector<std::string>::iterator &it, int
     if (!strIsDigit(*(++it))) {
         throw std::runtime_error("Client max body size must be a digit.");
     }
-    double maxBodySizeDouble = std::strtod((*it).c_str(), NULL);
-    this ->_maxBodySize = static_cast<int>(maxBodySizeDouble);
+    double maxBodySizeDouble = std::strtoul((*it).c_str(), NULL, 10);
+    this ->_maxBodySize = static_cast<size_t>(maxBodySizeDouble);
 }
 
 void Atributes::addIndex(std::vector<std::string>::iterator &it, int n) {
@@ -217,7 +217,7 @@ const std::vector<std::string> &Atributes::getCgi() const {
     return _cgi;
 }
 
-int Atributes::getMaxBodySize() const {
+size_t Atributes::getMaxBodySize() const {
     return _maxBodySize;
 }
 

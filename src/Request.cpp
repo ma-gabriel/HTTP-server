@@ -257,7 +257,7 @@ bool Request::isValid()
 			_config = Location(config);
         checkFirstLine();
 	}
-	if (((long) (_raw.length() - _raw.find("\r\n\r\n") - 4) > _config.getMaxBodySize()))
+	if (_raw.length() - _raw.find("\r\n\r\n") - 4 > _config.getMaxBodySize())
 		throw 413;
 	if (_raw.find("Content-Length: ") == std::string::npos){
 		if (_raw.find("\r\n\r\n") == _raw.length() - 4)
