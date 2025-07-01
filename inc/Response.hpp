@@ -13,7 +13,8 @@ public:
     static std::string error(int error, std::string name, std::map<int, std::string> pages);
     static std::string createResponse(Request &req);
     static void sendResponse(int sock, std::string content);
-    static bool HandleUpload(Request &req);
+    static bool handleUpload(Request &req);
+    static bool removeUpload(Request &req);
 
 private:
 // Private constructor

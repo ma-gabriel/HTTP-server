@@ -408,9 +408,12 @@ void Server::handleRequest(int sock)
 #endif
 		return ;
 	}
-	if (doCGI(req)){
-		return ;
-	}
+	if (Response::handleUpload(req))
+		return;
+	if (Response::removeUpload(req))
+		return;
+	if (doCGI(req))
+		return;
 	Response::sendResponse(sock, Response::createResponse(req));
 }
 
