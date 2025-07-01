@@ -139,9 +139,12 @@ void Epoll::routine()
 void Epoll::handleEvents(int sock)
 {
 	Server &serv = Server::instance();
-	if (serv.isServSocket(sock))
+
+	if (serv.isServSocket(sock)){
 		this->handleNewClients(sock);
-	else if (serv.createRequests(sock))		
+		return ;
+	}
+	if (serv.createRequests(sock))		
 	{
 #ifdef DEBUG
 		std::cout << "Receiving new request from " << serv.getClientAddress(sock) << std::endl;
@@ -174,7 +177,7 @@ void Epoll::addFd(int fd, bool in)
 	struct epoll_event event;
 
 	event.data.fd = fd;
-	event.events = (EPOLLIN * in) | (EPOLLOUT * !in) | EPOLLET;
+	event.events = (EPOLLIN * in) | (EPOLLOUT * !in);
 
 	if (epoll_ctl(this->_fd, EPOLL_CTL_ADD, fd, &event) == -1)
 	{

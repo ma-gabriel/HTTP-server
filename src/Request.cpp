@@ -40,12 +40,11 @@ Request::Request(int sock) : _sock(sock), _time(std::time(NULL))
 
 void Request::read()
 {
-	char buff[8192];
+	char buff[65536];
 	int val = recv(this->_sock, buff, sizeof(buff) - 1, MSG_DONTWAIT);
 	if (val == -1)
 		return ;
-	buff[val] = 0;
-	_raw += buff;
+	_raw.append(buff, val);
 }
 
 Request::Request(const Request &from)
@@ -162,7 +161,7 @@ bool Request::checkMethod()
 		return (true);
 	if (_method == "POST" && std::find(methods.begin(), methods.end(), Post) != methods.end())
 		return (true);
-	if (_method == "Put" && std::find(methods.begin(), methods.end(), Put) != methods.end())
+	if (_method == "PUT" && std::find(methods.begin(), methods.end(), Put) != methods.end())
 		return (true);
 	return false;
 
@@ -228,11 +227,13 @@ ConfigurationServer &Request::getConfigurationServer(std::vector<ConfigurationSe
 
 bool Request::isValid()
 {
-
 	if (_raw.find("\r\n\r\n") == std::string::npos)
 		return false; //because headers not finished
-	if (_path.empty())
+	if (_method.empty())
 	{
+		parseFirstLine();
+		if (_method == "")
+			throw 405;
 
 		ConfigurationServer config = getConfigurationServer(Epoll::instance().getFdClientConfigs()[_sock]);
         std::map<std::string, Location> &dict = config.getLocation();
@@ -259,10 +260,8 @@ bool Request::isValid()
 
 static std::map<std::string, Location>::iterator decide_location(std::map<std::string, Location> &dict, std::string path)
 {
-    std::cout << "Deciding location for path: " << path << std::endl;
-	if (path.find('/', 1) == std::string::npos)
-		return dict.end();
-	path = path.substr(0, path.find('/', 1));
+	if (path.find('/', 1) != std::string::npos)
+		path = path.substr(0, path.find('/', 1));
 	return dict.find(path);
 }
 

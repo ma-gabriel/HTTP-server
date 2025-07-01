@@ -28,7 +28,11 @@ if field_item.filename:
 
     try:
         with open(filepath, "wb") as f:
-            f.write(field_item.file.read())
+            while True:
+                chunk = field_item.file.read(1024 * 1024)  # 1MB chunks
+                if not chunk:
+                    break
+                f.write(chunk)
         print(f"Uploaded file: {filename}")
     except Exception as e:
         print(f"Error saving file: {e}")
