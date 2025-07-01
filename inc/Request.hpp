@@ -59,6 +59,7 @@ private:
     void parseFirstLine(void);
     void checkFirstLine(void);
     bool checkMethod(void);
+    bool checkPath(void);
     void extractHeaders(void);
     std::string extractHeaderKey(std::string& line);
     std::string extractOneLine(void);

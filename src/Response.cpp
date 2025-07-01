@@ -164,7 +164,7 @@ std::string Response::createResponse(Request &req)
     << res.length() << "\r\n\r\n")).str() + res;
 }
 
-bool HandleUpload(Request &req)
+bool Response::handleUpload(Request &req)
 {
     if (req.getMethod() != "POST" && req.getMethod() != "PUT")
         return false;
@@ -190,9 +190,93 @@ bool HandleUpload(Request &req)
     }
 
     std::map<std::string, std::string> files;
+    std::string delim = "--" + boundary;
+    std::string end_delim = delim + "--";
+    size_t pos = 0;
+    while (true) {
+        size_t start = req.getBody().find(delim + "\r\n", pos);
+        if (start == std::string::npos)
+            break;
+        start += delim.length() + 2;
+        size_t next = req.getBody().find(delim, start);
+        if (next == std::string::npos)
+            break;
+        std::string part = req.getBody().substr(start, next - start);
+        size_t header_end = part.find("\r\n\r\n");
+        if (header_end == std::string::npos){
+            Response::sendResponse(req.getSock(), Response::error(400, "Bad Request", req.getConfig().getErrorPages()));
+            return true;
+        }
+        std::string headers = part.substr(0, header_end);
+        std::string content = part.substr(header_end + 4); // skip \r\n\r\n
+
+        size_t cd_pos = headers.find("Content-Disposition:");
+        if (cd_pos == std::string::npos){
+            Response::sendResponse(req.getSock(), Response::error(400, "Bad Request", req.getConfig().getErrorPages()));
+            return true;
+        }
+        size_t name_pos = headers.find("filename=\"", cd_pos);
+        if (name_pos == std::string::npos){
+            Response::sendResponse(req.getSock(), Response::error(400, "Bad Request", req.getConfig().getErrorPages()));
+            return true;
+        }
+
+        name_pos += 10; // move past filename="
+        size_t name_end = headers.find("\"", name_pos);
+        if (name_end == std::string::npos){
+            Response::sendResponse(req.getSock(), Response::error(400, "Bad Request", req.getConfig().getErrorPages()));
+            return true;
+        }
+
+        files[headers.substr(name_pos, name_end - name_pos)] = content;
+
+        pos = next;
+    }
+    if (req.getBody().compare(pos, end_delim.length() + 2, end_delim + "\r\n")){
+        Response::sendResponse(req.getSock(), Response::error(400, "Bad Request", req.getConfig().getErrorPages()));
+        return true;
+    }
+
+    for (std::map<std::string, std::string>::iterator it = files.begin(); it != files.end(); it++){
+        if (!access(("./static/uploads/" + it->first).c_str(), F_OK)){
+            Response::sendResponse(req.getSock(), Response::error(409, "Conflict", req.getConfig().getErrorPages()));
+            return true;
+        }
+    }
+    for (std::map<std::string, std::string>::iterator it = files.begin(); it != files.end(); it++){
+        std::ofstream outfile(("./static/uploads/" + it->first).c_str());
+        if (outfile)
+            outfile << it->second;
+        outfile.close();
+    }
+    Response::sendResponse(req.getSock(), Response::error(201, "Created", req.getConfig().getErrorPages()));
     return true;
 }
-// Private member functions
+
+
+bool Response::removeUpload(Request &req)
+{
+    if (req.getMethod() != "DELETE")
+        return false;
+    std::string file = req.getPath();
+    size_t i = req.getPath().find_last_of("/");
+    if (i != std::string::npos)
+        file = "static/uploads/" + req.getPath().substr(i + 1);
+    size_t query = file.find('?');
+    if (query != std::string::npos)
+        file.erase(query);
+    if (access(file.c_str(), F_OK)){
+        Response::sendResponse(req.getSock(), Response::error(404, "Not Found", req.getConfig().getErrorPages()));
+        return true;
+    }
+    std::remove(file.c_str());
+    if (access(file.c_str(), F_OK))
+        Response::sendResponse(req.getSock(), Response::error(204, "No Content", req.getConfig().getErrorPages()));
+    else    
+        Response::sendResponse(req.getSock(), Response::error(500, "Internal Server Error", req.getConfig().getErrorPages()));
+    return true;
+}
+
 
 void Response::sendResponse(int sock, std::string content)
 {
