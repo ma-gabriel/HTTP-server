@@ -64,7 +64,7 @@ private:
     bool checkPath(void);
     void extractHeaders(void);
     std::string extractHeaderKey(std::string& line);
-    std::string extractOneLine(void);
+    std::string extractOneLine();
     // Private attributs
     int			_sock;
     ConfigurationServer &getConfigurationServer(std::vector<ConfigurationServer> &servers);

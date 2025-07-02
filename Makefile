@@ -23,6 +23,7 @@ SRCS_FILES		= main.cpp \
                   utils/isSeparator.cpp \
                   utils/strNoCase.cpp \
                   utils/strIsdigit.cpp \
+                  utils/findInsensitive.cpp \
                   exceptions/LocationException.cpp \
                   Redirection.cpp \
                   Epoll.cpp \

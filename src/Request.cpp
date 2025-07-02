@@ -138,7 +138,6 @@ void Request::parseRequest()
 void Request::parseFirstLine()
 {
 	std::string first_line = extractOneLine();
-
 	std::string buff;
 	std::istringstream stream(first_line);
 
@@ -149,6 +148,8 @@ void Request::parseFirstLine()
         this->_path = "/" + this->_path; // Ensure path starts with '/'
     if (this->_path[this->_path.length() - 1] == '/' && this->_path.length() > 1)
         this->_path.erase(this->_path.length() - 1);
+    if (this->_path.length() > 4096)
+        throw 414;
 }
 
 void Request::checkFirstLine()
@@ -195,7 +196,7 @@ bool Request::checkPath()
 void Request::extractHeaders()
 {
 	std::string curr_line = extractOneLine();
-	while (curr_line.empty() == false)
+	while (!curr_line.empty())
 	{
 		std::string key = extractHeaderKey(curr_line);
 		this->_headers[key] = curr_line;
@@ -205,20 +206,53 @@ void Request::extractHeaders()
 
 std::string Request::extractHeaderKey(std::string& line)
 {
-	std::string::size_type colon_pos = line.find(":");
+    if (line.length() > 4096)
+        throw Request::BadRequestException("Header too long");
+    std::string::size_type colon_pos = line.find(":");
 	if (colon_pos == std::string::npos)
 		throw Request::BadRequestException("Bad header formating");
+    std::string special_chars = "!#$%&'*+-.^_`|~";
+    for (std::string::size_type i = 0; i < colon_pos; ++i)
+    {
+        if (!((line[i] >= 'A' && line[i] <= 'Z') || (line[i] >= 'a' && line[i] <= 'z') || (line[i] >= '0' && line[i] <= '9') || special_chars.find(line[i]) != std::string::npos))
+            throw Request::BadRequestException("Bad header formating");
+        line[i] = std::tolower(line[i]);
+    }
 	std::string key = line.substr(0, colon_pos);
-	line.erase(0, colon_pos + 2);
-	return (key);
+    if (key.empty())
+        throw Request::BadRequestException("Bad header formating");
+    line.erase(0, colon_pos + 1);
+    bool lineEmpty = true;
+    for (std::string::size_type i = 0; i < key.length(); ++i)
+    {
+        if (key[i] != ' ' && key[i] != '\t')
+            lineEmpty = false;
+        if (!((key[i] >= 32 && key[i] <= 126) || key[i] == '\t'))
+            throw Request::BadRequestException("Bad header formating");
+    }
+    if (lineEmpty)
+        return "";
+    std::cout << "line:" << line << std::endl;
+    if (line[0] == ' ' || line[0] == '\t')
+        line.erase(0, 1); // Remove leading space or tab
+
+    if (line[line.length() - 1] == ' ' || line[line.length() - 1] == '\t')
+        line.erase(line.length() - 2, line.length() - 1); // Remove trailing space or tab
+     std::cout << "line:" << line << std::endl;
+    if (line[0] == ' ' || line[0] == '\t' || line[line.length() - 1] == ' ' || line[line.length() - 1] == '\t')
+        throw Request::BadRequestException("Bad header formating");
+    return (key);
 }
 
 std::string Request::extractOneLine()
 {
 	std::string::size_type line_end = this->_raw.find("\r\n");
+    std::cout << line_end << " " <<  this->_raw.find("\r") << " " << this->_raw.find("\n") << std::endl;
 	if (line_end == std::string::npos)
-		throw Request::BadRequestException("End-of-line error");
-	std::string line = this->_raw.substr(0, line_end);
+        throw Request::BadRequestException("Bad header formating");
+    if (line_end != this->_raw.find("\r") || line_end != this->_raw.find("\n") - 1)
+        throw Request::BadRequestException("Bad header formating");
+    std::string line = this->_raw.substr(0, line_end);
 	this->_raw.erase(0, line_end + 2);
 
 	return (line);
@@ -228,7 +262,7 @@ ConfigurationServer &Request::getConfigurationServer(std::vector<ConfigurationSe
 {
 	// https://datatracker.ietf.org/doc/html/rfc7230#section-5.4 
 	// "A client MUST send a Host header field in all HTTP/1.1 request message"
-    size_t iHost = _raw.find("Host: ");
+    size_t iHost = findInsensitive(_raw, "Host:");
     if (iHost == std::string::npos)
         throw 400;
      size_t endHost = _raw.find("\r\n", iHost);
@@ -266,14 +300,14 @@ bool Request::isValid()
 	}
 	if (_raw.length() - _raw.find("\r\n\r\n") - 4 > _config.getMaxBodySize())
 		throw 413;
-	if (_raw.find("Content-Length: ") == std::string::npos){
+	if (findInsensitive(_raw, "Content-Length:") == std::string::npos){
 		if (_raw.find("\r\n\r\n") == _raw.length() - 4)
 			return true;
 		throw 400;
 	}
-	if ((long) (_raw.length() - _raw.find("\r\n\r\n") - 4) == std::atol(_raw.c_str() + _raw.find("Content-Length: ") + 16))
+	if ((long) (_raw.length() - _raw.find("\r\n\r\n") - 4) == std::atol(_raw.c_str() + findInsensitive(_raw, "Content-Length:") + 16))
 		return true;
-	if ((long) (_raw.length() - _raw.find("\r\n\r\n") - 4) > std::atol(_raw.c_str() + _raw.find("Content-Length: ") + 16))
+	if ((long) (_raw.length() - _raw.find("\r\n\r\n") - 4) > std::atol(_raw.c_str() + findInsensitive(_raw, "Content-Length:") + 16))
 		throw 400;
 	return false;
 }

@@ -305,6 +305,7 @@ bool Response::removeUpload(Request &req)
 
 void Response::sendResponse(int sock, std::string content)
 {
+    std::cout  << content << std::endl;
     Epoll::instance().modFd(sock);
     Server::getResponses()[sock] = content;
     Server::getRequests().erase(sock);

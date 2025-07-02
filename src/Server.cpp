@@ -314,6 +314,8 @@ bool Server::createRequests(int sock)
 			Response::sendResponse(sock, Response::error(405, "Method Not Allowed 	", _requests.at(sock).getConfig().getErrorPages()));
 		else if (e == 505)
 			Response::sendResponse(sock, Response::error(505, "HTTP Version not supported", _requests.at(sock).getConfig().getErrorPages()));
+        else if (e == 414)
+			Response::sendResponse(sock, Response::error(414, "URI Too Long", _requests.at(sock).getConfig().getErrorPages()));
 		else
 			Response::sendResponse(sock, Response::error(500, "Something went wrong", _requests.at(sock).getConfig().getErrorPages()));
 		Server::getRequests().erase(sock);
