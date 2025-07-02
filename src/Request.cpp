@@ -147,7 +147,7 @@ void Request::parseFirstLine()
 	getline(stream, this->_version, '\r');
     if (this->_path.empty() || this->_path[0] != '/')
         this->_path = "/" + this->_path; // Ensure path starts with '/'
-    if (this->_path[this->_path.length() - 1] == '/')
+    if (this->_path[this->_path.length() - 1] == '/' && this->_path.length() > 1)
         this->_path.erase(this->_path.length() - 1);
 }
 

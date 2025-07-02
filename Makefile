@@ -43,6 +43,7 @@ DEPS = $(patsubst $(SRCS_PATH)/%$(FILE_EXTENSION),$(OBJ_PATH)/%.d,$(SRCS))
 
 ### Makefile rules
 all: $(NAME)
+	@mkdir -p static/uploads
 
 $(NAME): ${OBJS}
 	$(CXX) $(CFLAGS) -o $@ ${OBJS}

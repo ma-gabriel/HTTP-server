@@ -10,6 +10,7 @@
 #include <sstream>
 #include <cstdlib>
 #include <dirent.h>
+#include <climits>
 #include "Epoll.hpp"
 
 #ifndef COLORS
@@ -95,12 +96,14 @@ std::string Response::error(int error, std::string name, std::map<int, std::stri
     if (req.getHeaders().find("Host") == req.getHeaders().end()) {
         return Response::error(400, "Bad Request", req.getConfig().getErrorPages());
     }
+    if (!pathUrl.empty() && pathUrl[pathUrl.size() - 1] != '/')
+        pathUrl += '/';
     std::string body = "<body>\n<h1>\nIndex of " + pathUrl + "\n</h1>\n<ul>\n";
     for (std::multimap<std::string, unsigned char>::const_iterator it = filesInfo.begin();
          it != filesInfo.end(); ++it) {
         if (it->first == "." || it->first == "..")
             continue;
-        body += "<li>\n<a href=\"http://" + req.getHeaders().at("Host") + pathUrl + '/' + it->first +  "\">" + it->first + " ";
+        body += "<li>\n<a href=\"http://" + req.getHeaders().at("Host") + pathUrl  + it->first +  "\">" + it->first + " ";
         if (it->second == DT_DIR)
             body += "\xF0\x9F\x93\x81</a>\n</li>\n";
         else
@@ -120,6 +123,21 @@ std::string Response::createResponsePage(size_t code, std::string infoCode, std:
 std::string Response::createHeaderHtml(std::string title)
 {
     return "<!doctype html>\n<head>\n<meta charset=\"UTF-8\">  <title>" + title + "</title>\n</head>\n";
+}
+
+static std::string extract_cookies(const std::map<std::string, std::string> &headers){
+
+    std::map <std::string, std::string>::const_iterator it = headers.find("Cookie");
+    if (it == headers.end())
+        return "Set-Cookie: nb_static_visits=1; Max-Age=3600; Path=/";
+    size_t i = it->second.find("nb_static_visits=");
+    if (i == std::string::npos)
+        return "Set-Cookie: nb_static_visits=1; Max-Age=3600; Path=/";
+    size_t val = std::strtoul (it->second.substr(i + 17).c_str(), NULL, 0);
+    if (val == ULONG_MAX)
+        return "Set-Cookie: nb_static_visits=1; Max-Age=3600; Path=/";
+    return static_cast< std::ostringstream & >(( std::ostringstream() << std::dec << \
+    "Set-Cookie: nb_static_visits=" << val + 1 << "; Max-Age=3600; Path=/")).str();
 }
 
 std::string Response::createResponse(Request &req)
@@ -164,9 +182,11 @@ std::string Response::createResponse(Request &req)
     else
         res.assign(std::istreambuf_iterator<char>(infile), std::istreambuf_iterator<char>());
 
+    std::string cookies = extract_cookies(req.getHeaders());
+
     return static_cast< std::ostringstream & >(( std::ostringstream() << std::dec << \
     "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: " \
-    << res.length() << "\r\n\r\n")).str() + res;
+    << res.length() << "\r\n" << cookies << "\r\n\r\n")).str() + res;
 }
 
 bool Response::handleUpload(Request &req)
