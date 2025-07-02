@@ -101,6 +101,7 @@ void Atributes::addRoot(std::vector<std::string>::iterator &it, int n) {
        throw std::runtime_error("Root attribute requires a value.");
     }
     this->_root = (*(++it));
+    checkLocationPath(this->_root);
 }
 
 void Atributes::addClientMaxBodySize(std::vector<std::string>::iterator &it, int n) {
@@ -174,6 +175,21 @@ void Atributes::addHttpIndex(std::vector<std::string>::iterator &it, int n) {
             throw std::runtime_error("HTTP method must be 'GET', 'PUT', 'POST' or 'DELETE'.");
         }
     }
+}
+
+void Atributes::checkLocationPath(std::string &path){
+    if (path.find("//") != std::string::npos) {
+        throw std::runtime_error("Location path cannot contain double slashes.");
+    }
+    for (size_t i = 0; i < path.length(); ++i) {
+        if (!((path[i] >= '1' && path[i] <= '9') || (path[i] >= 'a' && path[i] <= 'z') || (path[i] >= 'A' && path[i] <= 'Z') || path[i] == '_' || path[i] == '-' || path[i] == '.' || path[i] == '~' || path[i] == '/')) {
+            throw std::runtime_error("Location path contain invalid characters: " + path);
+        }
+    }
+    if (path[0] != '/')
+        path = '/' + path; // Ensure path starts with a slash
+    if (path[path.length() - 1] == '/')
+        path = path.erase(path.length() - 1); // Remove trailing slash if present
 }
 
 void Atributes::addErrorPages(std::vector<std::string>::iterator &it, int n) {

@@ -85,6 +85,7 @@ std::string Response::error(int error, std::string name, std::map<int, std::stri
     struct dirent *entry;
     std::string header = createHeaderHtml("Index of " + pathUrl);
    dir = opendir(pathFile.c_str());
+   std::cout << "Listing directory: " << pathFile << std::endl;
     if (!dir)
          return error(404, "Not Found", std::map<int, std::string>());
     while ((entry = readdir(dir))) {
@@ -115,7 +116,7 @@ std::string Response::createResponsePage(size_t code, std::string infoCode, std:
 
 std::string Response::createHeaderHtml(std::string title)
 {
-    return "<!doctype html>\n<head>\n<meta charset=\"UTF-8\">  <title>" + title + "</title>\n<></head>\n";
+    return "<!doctype html>\n<head>\n<meta charset=\"UTF-8\">  <title>" + title + "</title>\n</head>\n";
 }
 
 std::string Response::createResponse(Request &req)
@@ -140,18 +141,19 @@ std::string Response::createResponse(Request &req)
     if (stat(file.c_str(), &data) == 0
 		&& S_ISDIR(data.st_mode) != 0)
     {
-        if (req.getConfig().getIndex().empty() && req.getConfig().isAutoIndex() == TRUE)
-            return createListingFile(file, req.getPath());
+        std::string fileTemp;
         std::vector<std::string>::const_iterator it = req.getConfig().getIndex().begin();
         for (; it != req.getConfig().getIndex().end(); it++){
-            file = "." + root + "/" + *it;
-            if (stat(file.c_str(), &data) == 0
+            fileTemp = "." + root + "/" + *it;
+            if (stat(fileTemp.c_str(), &data) == 0
                 && S_ISREG(data.st_mode) != 0
-                && access(file.c_str(), R_OK) == 0)
+                && access(fileTemp.c_str(), R_OK) == 0)
                 break;
         }
-        if (it == req.getConfig().getIndex().end())
+        if (it == req.getConfig().getIndex().end() && req.getConfig().isAutoIndex() == FALSE)
             return error(404, "Not Found", req.getConfig().getErrorPages());
+        if (req.getConfig().isAutoIndex() == TRUE)
+            return createListingFile(file, req.getPath());
     }
     std::ifstream infile(file.c_str());
     if (!infile.is_open())

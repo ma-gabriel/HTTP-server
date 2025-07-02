@@ -25,6 +25,7 @@ private:
     void addClientMaxBodySize(std::vector<std::string>::iterator &it, int n);
     void addReturn(std::vector<std::string>::iterator &it, int n);
 
+
 protected:
     std::string					_root;
     std::map<int, std::string> 	_errorPages;
@@ -35,6 +36,7 @@ protected:
     size_t                      _maxBodySize;
     Redirection                 _redirection;
     int getSizeLine(std::vector<std::string>::iterator it, const std::vector<std::string>::iterator &end);
+    void checkLocationPath(std::string &path);
 
 public:
     Atributes();
