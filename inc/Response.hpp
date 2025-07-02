@@ -20,7 +20,7 @@ public:
 private:
 // Private constructor
 // Constructors
-    static std::string createListingFile(std::string pathFile, std::string pathUrl);
+    static std::string createListingFile(std::string pathFile, std::string pathUrl, Request &req);
     Response(const Response &from);
     Response &operator=(const Response &from);
 // Destructors

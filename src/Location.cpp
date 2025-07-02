@@ -33,7 +33,6 @@ Location::Location(std::vector<std::string>::iterator &it, const std::vector<std
         throw std::runtime_error("Path of location is the end of file ");
     this->_path = *it;
     checkLocationPath(this->_path);
-    std::cout << "Location path : " << this->_path << std::endl;
     correctPath();
     if (++it == end || *it != "{") {
         throw std::runtime_error("after location : " + this->_path + " is not left brace \n");

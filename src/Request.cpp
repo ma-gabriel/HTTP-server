@@ -145,6 +145,11 @@ void Request::parseFirstLine()
 	getline(stream, this->_method, ' ');
 	getline(stream, this->_path, ' ');
 	getline(stream, this->_version, '\r');
+    if (this->_path.empty() || this->_path[0] != '/')
+        this->_path = "/" + this->_path; // Ensure path starts with '/'
+    if (this->_path[this->_path.length() - 1] == '/')
+        this->_path.erase(this->_path.length() - 1);
+    std::cout << "Request path: " << this->_path << std::endl;
 }
 
 void Request::checkFirstLine()
@@ -272,6 +277,10 @@ bool Request::isValid()
 	if ((long) (_raw.length() - _raw.find("\r\n\r\n") - 4) > std::atol(_raw.c_str() + _raw.find("Content-Length: ") + 16))
 		throw 400;
 	return false;
+}
+
+const std::string &Request::getRaw() const {
+    return _raw;
 }
 
 static Location *decide_location(std::map<std::string, Location> &dict, std::string path)

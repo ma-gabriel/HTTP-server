@@ -78,7 +78,7 @@ std::string Response::error(int error, std::string name, std::map<int, std::stri
     << res.length() << "\r\n\r\n")).str() + res;
 }
 
- std::string Response::createListingFile(std::string pathFile, std::string pathUrl)
+ std::string Response::createListingFile(std::string pathFile, std::string pathUrl, Request &req)
 {
    std::multimap<std::string, unsigned char> filesInfo;
    DIR *dir;
@@ -92,16 +92,19 @@ std::string Response::error(int error, std::string name, std::map<int, std::stri
         filesInfo.insert(std::make_pair(entry->d_name, entry->d_type));
     }
     std::string headerHtml = createHeaderHtml(pathFile);
+    if (req.getHeaders().find("Host") == req.getHeaders().end()) {
+        return Response::error(400, "Bad Request", req.getConfig().getErrorPages());
+    }
     std::string body = "<body>\n<h1>\nIndex of " + pathUrl + "\n</h1>\n<ul>\n";
     for (std::multimap<std::string, unsigned char>::const_iterator it = filesInfo.begin();
          it != filesInfo.end(); ++it) {
         if (it->first == "." || it->first == "..")
             continue;
-        body += "<li>" + it->first + " ";
+        body += "<li>\n<a href=\"http://" + req.getHeaders().at("Host") + pathUrl + '/' + it->first +  "\">" + it->first + " ";
         if (it->second == DT_DIR)
-            body += "\xF0\x9F\x93\x81</li>\n";
+            body += "\xF0\x9F\x93\x81</a>\n</li>\n";
         else
-            body += "\xF0\x9F\x93\x84</li>\n";
+            body += "\xF0\x9F\x93\x84</a>\n</li>\n";
     }
     body += "</ul>\n</body>\n";
     return createResponsePage(200, "OK", header + body);
@@ -153,7 +156,7 @@ std::string Response::createResponse(Request &req)
         if (it == req.getConfig().getIndex().end() && req.getConfig().isAutoIndex() == FALSE)
             return error(404, "Not Found", req.getConfig().getErrorPages());
         if (req.getConfig().isAutoIndex() == TRUE)
-            return createListingFile(file, req.getPath());
+            return createListingFile(file, req.getPath(), req);
     }
     std::ifstream infile(file.c_str());
     if (!infile.is_open())

@@ -27,9 +27,10 @@ int main(int argc, char **argv)
 		std::map<long, std::vector<ConfigurationServer> >::const_iterator it;
 		for (it = allServers.begin(); it != allServers.end(); ++it)
 			epoll.addFd(server.newInstance(it->second));
-		while (Epoll::isRunning)
-				epoll.routine();
+        while (Epoll::isRunning)
+            epoll.routine();
 	}
+
 	catch (const std::exception &e) {
 		std::cerr << e.what() << std::endl;
 		return (1);

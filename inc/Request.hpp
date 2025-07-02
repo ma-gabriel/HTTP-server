@@ -51,6 +51,8 @@ public:
         const char* _why;
     };
 
+    const std::string &getRaw() const;
+
 private:
 
     Request(void);

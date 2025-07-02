@@ -5,6 +5,9 @@
  std::string Response::createResponseRedirect(Request &request){
     std::string  path = request.getPath();
     std::string  locationPath = request.getConfig().getPath();
+    if (request.getHeaders().find("Host") == request.getHeaders().end()) {
+        return Response::error(400, "Bad Request", request.getConfig().getErrorPages());
+    }
     std::string newRedirection = "http://" + request.getHeaders().at("Host") + request.getConfig().getRedirection().getPath();
     std::cout << "Redirection to: " << newRedirection << std::endl;
     (void)request;

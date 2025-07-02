@@ -250,7 +250,12 @@ void Server::routineReq()
 		}
 	}
 	for (std::vector<int>::iterator it = to_remove.begin(); it != to_remove.end(); ++it){
-		Response::sendResponse(*it, Response::error(504, "Gateway Timeout", _requests.at(*it).getConfig().getErrorPages()));
+        if (_requests.find(*it) == _requests.end()) {
+            std::cerr << "Request with sock " << *it << " not found in _requests map." << std::endl;
+            continue; // In case the request was already removed
+        }
+        if (!_requests.at(*it).getRaw().empty())
+		    Response::sendResponse(*it, Response::error(504, "Gateway Timeout", _requests.at(*it).getConfig().getErrorPages()));
 		_requests.erase(*it);
 	}
 }
@@ -437,7 +442,6 @@ void Server::writeResponses(int sock)
 {
 	std::string &str = Server::instance()._responses[sock];
 
-	std::cout << "writing response on: " << sock << std::endl;
 	ssize_t len = send(sock, str.c_str(), str.length(), MSG_DONTWAIT);
 	if (len == -1)
 		return ;
@@ -445,5 +449,4 @@ void Server::writeResponses(int sock)
 	if (str.length())
 		return ;
 	Epoll::instance().delAndCloseSocket(sock);
-	std::cout << "just closed: " << sock << std::endl;
 }
