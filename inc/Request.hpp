@@ -37,7 +37,7 @@ public:
     // Setters
     // Public member functions
     void parseRequest(void);
-    void read(void);
+    bool read(void);
     bool isValid(void);
     // Public exception
     class BadRequestException : public std::exception

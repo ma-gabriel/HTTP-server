@@ -38,13 +38,18 @@ Request::Request(int sock) : _sock(sock), _time(std::time(NULL))
 
 }
 
-void Request::read()
+bool Request::read()
 {
 	char buff[65536];
 	int val = recv(this->_sock, buff, sizeof(buff) - 1, MSG_DONTWAIT);
 	if (val == -1)
-		return ;
+		return false;
+	if (val == 0) {
+		Epoll::instance().delAndCloseSocket(_sock);
+		return false;
+	}
 	_raw.append(buff, val);
+	return true;
 }
 
 Request::Request(const Request &from)
