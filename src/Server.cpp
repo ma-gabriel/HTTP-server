@@ -295,6 +295,7 @@ bool Server::createRequests(int sock)
 	}
 	catch (const int &e)
 	{
+
 		if (e == 400)
 			Response::sendResponse(sock, Response::error(400, "Bad Request", _requests.at(sock).getConfig().getErrorPages()));
 		else if (e == 413)
@@ -402,13 +403,8 @@ void Server::handleRequest(int sock)
 		req.parseRequest();
 	} catch (Request::BadRequestException &e) {
 		Response::sendResponse(sock, Response::error(400, "Bad Request", req.getConfig().getErrorPages()));
-#ifdef DEBUG
-		std::cout << "Exception: Bad request: ";
-		std::cout << e.what() << std::endl;
-#endif
 		return ;
 	}
-
     if (req.getConfig().getRedirection().getCode() != -1) {
         Response::sendResponse(sock, Response::createResponseRedirect(req));
         return;
@@ -418,8 +414,7 @@ void Server::handleRequest(int sock)
     if (Response::removeUpload(req))
         return;
     if (doCGI(req))
-		return ;
-
+		return;
 	Response::sendResponse(sock, Response::createResponse(req));
 }
 

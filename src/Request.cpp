@@ -170,13 +170,11 @@ bool Request::checkPath()
 {
 	if (_path.find("//") != std::string::npos)
 		return false;
-	if (!_path.compare(0, 3, "../"))
+	if (_path[0] != '/')
 		return false;
-	if (!_path.compare(0, 2, "./"))
+	if (_path.length() >= 3 && !_path.compare(_path.length() - 3, 3, "/.."))
 		return false;
-	if (!_path.compare(_path.length() - 3, 3, "/.."))
-		return false;
-	if (!_path.compare(_path.length() - 2, 2, "/."))
+	if (_path.length() >= 2 && !_path.compare(_path.length() - 2, 2, "/."))
 		return false;
 	if (_path.find("/../") != std::string::npos)
 		return false;
@@ -238,7 +236,7 @@ ConfigurationServer &Request::getConfigurationServer(std::vector<ConfigurationSe
                 return *it;
         }
     }
-    return  servers[0];
+    return servers[0];
 }
 
 bool Request::isValid()

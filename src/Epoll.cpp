@@ -156,8 +156,7 @@ void Epoll::handleEvents(int sock)
 
 
 void Epoll::handleNewClients(int sock) {
-	Server &serv = Server::instance();
-	int client_sock = serv.newClient(sock);
+	int client_sock = Server::instance().newClient(sock);
 	if (client_sock != -1) {
 		this->addFd(client_sock);
 		this->_fdClientsConfigs[client_sock] = Server::getInstances()[sock];
