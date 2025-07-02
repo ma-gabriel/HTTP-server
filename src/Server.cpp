@@ -290,8 +290,9 @@ void Server::routineCGI()
 bool Server::createRequests(int sock)
 {
 	try {
-		_requests.at(sock).read();
-		return (_requests.at(sock).isValid());
+		if (_requests.at(sock).read())
+			return (_requests.at(sock).isValid());
+		return false;
 	}
 	catch (const int &e)
 	{
@@ -436,6 +437,7 @@ void Server::writeResponses(int sock)
 {
 	std::string &str = Server::instance()._responses[sock];
 
+	std::cout << "writing response on: " << sock << std::endl;
 	ssize_t len = send(sock, str.c_str(), str.length(), MSG_DONTWAIT);
 	if (len == -1)
 		return ;
@@ -443,4 +445,5 @@ void Server::writeResponses(int sock)
 	if (str.length())
 		return ;
 	Epoll::instance().delAndCloseSocket(sock);
+	std::cout << "just closed: " << sock << std::endl;
 }

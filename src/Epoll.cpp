@@ -150,7 +150,7 @@ void Epoll::handleEvents(int sock)
 		std::cout << "Receiving new request from " << serv.getClientAddress(sock) << std::endl;
 #endif
 		serv.handleRequest(sock);
-		serv.getRequests().erase(sock);
+		// serv.getRequests().erase(sock);
 	}
 }
 
@@ -199,7 +199,6 @@ void Epoll::addFd(int fd, bool in)
 	#endif
 }
 
-
 void Epoll::modFd(int fd, bool in)
 {
 	if (fd == -1)
@@ -208,7 +207,7 @@ void Epoll::modFd(int fd, bool in)
 	struct epoll_event event;
 
 	event.data.fd = fd;
-	event.events = (EPOLLIN * in) | (EPOLLOUT * !in) | EPOLLET;
+	event.events = EPOLLOUT * !in;
 
 	if (epoll_ctl(this->_fd, EPOLL_CTL_MOD, fd, &event) == -1)
 	{

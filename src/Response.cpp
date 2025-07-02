@@ -285,4 +285,5 @@ void Response::sendResponse(int sock, std::string content)
     Epoll::instance().modFd(sock);
     Server::getResponses()[sock] = content;
     Server::getRequests().erase(sock);
+	Server::instance().killCGIsock(sock);
 }
