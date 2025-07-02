@@ -149,7 +149,6 @@ void Request::parseFirstLine()
         this->_path = "/" + this->_path; // Ensure path starts with '/'
     if (this->_path[this->_path.length() - 1] == '/')
         this->_path.erase(this->_path.length() - 1);
-    std::cout << "Request path: " << this->_path << std::endl;
 }
 
 void Request::checkFirstLine()
