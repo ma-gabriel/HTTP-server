@@ -9,9 +9,6 @@
         return Response::error(400, "Bad Request", request.getConfig().getErrorPages());
     }
     std::string newRedirection = "http://" + request.getHeaders().at("Host") + request.getConfig().getRedirection().getPath();
-    std::cout << "Redirection to: " << newRedirection << std::endl;
-    (void)request;
-
      std::ostringstream oss;
      oss << std::dec
          << "HTTP/1.1 " << request.getConfig().getRedirection().getCode() << " "

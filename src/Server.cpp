@@ -254,9 +254,12 @@ void Server::routineReq()
             std::cerr << "Request with sock " << *it << " not found in _requests map." << std::endl;
             continue; // In case the request was already removed
         }
-        if (!_requests.at(*it).getRaw().empty())
+        if (!_requests.at(*it).getRaw().empty()){
 		    Response::sendResponse(*it, Response::error(504, "Gateway Timeout", _requests.at(*it).getConfig().getErrorPages()));
-		_requests.erase(*it);
+			_requests.erase(*it);
+		}
+		else
+			Epoll::instance().delAndCloseSocket(*it);
 	}
 }
 
