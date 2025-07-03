@@ -9,6 +9,7 @@
 #include <sys/socket.h>
 #include <sstream>
 #include <cstdlib>
+#include <algorithm>
 #include <dirent.h>
 #include <climits>
 #include "Epoll.hpp"
@@ -19,6 +20,7 @@
 # define RESET "\033[0m"
 
 #endif
+
 
 // Constructors
 Response::Response(void)
@@ -59,7 +61,6 @@ Response& Response::operator=(const Response &from)
 
 std::string Response::error(int error, std::string name, std::map<int, std::string> pages)
 {
-    std::string res;
     std::ifstream infile;
     std::map<int, std::string>::const_iterator file = pages.find(error);
 
@@ -67,16 +68,14 @@ std::string Response::error(int error, std::string name, std::map<int, std::stri
         infile.open(("." + file->second).c_str());
     
     if (!infile.is_open())
-        res = static_cast< std::ostringstream & >(( std::ostringstream() << std::dec << \
-        "<!doctype html>\n<head>\n  <title>" << error << " " <<  name << \
-        "</title>\n</head>\n<body>\n  <h1>" << name << "</h1>\n</body></html>")).str();
-    else
-        res.assign(std::istreambuf_iterator<char>(infile), std::istreambuf_iterator<char>());
-
-
+        return static_cast< std::ostringstream & >(( std::ostringstream() << std::dec << \
+        "HTTP/1.1 " << error << " " << name << "\r\nContent-Type: text/html\r\nContent-Length: " \
+        << 86 + name.length() * 2 << "\r\n\r\n" << "<!doctype html>\n<head>\n  <title>" << error << " " <<  \
+        name << "</title>\n</head>\n<body>\n  <h1>" << name << "</h1>\n</body></html>")).str();
+    std::string res((std::istreambuf_iterator<char>(infile)), std::istreambuf_iterator<char>());
     return static_cast< std::ostringstream & >(( std::ostringstream() << std::dec << \
-    "HTTP/1.1 " << error << " " << name << "\r\nContent-Type: text/html\r\nContent-Length: " \
-    << res.length() << "\r\n\r\n")).str() + res;
+    "HTTP/1.1 " << error << " " << name << "\r\nContent-Type: " << Response::getContentType(file->second) << \
+    "\r\nContent-Length: " << res.length() << "\r\n\r\n")).str() + res;
 }
 
  std::string Response::createListingFile(std::string pathFile, std::string pathUrl, Request &req)
@@ -86,14 +85,13 @@ std::string Response::error(int error, std::string name, std::map<int, std::stri
     struct dirent *entry;
     std::string header = createHeaderHtml("Index of " + pathUrl);
    dir = opendir(pathFile.c_str());
-   std::cout << "Listing directory: " << pathFile << std::endl;
     if (!dir)
          return error(404, "Not Found", std::map<int, std::string>());
     while ((entry = readdir(dir))) {
         filesInfo.insert(std::make_pair(entry->d_name, entry->d_type));
     }
     std::string headerHtml = createHeaderHtml(pathFile);
-    if (req.getHeaders().find("Host") == req.getHeaders().end()) {
+    if (req.getHeaders().find("host") == req.getHeaders().end()) {
         return Response::error(400, "Bad Request", req.getConfig().getErrorPages());
     }
     if (!pathUrl.empty() && pathUrl[pathUrl.size() - 1] != '/')
@@ -103,12 +101,16 @@ std::string Response::error(int error, std::string name, std::map<int, std::stri
          it != filesInfo.end(); ++it) {
         if (it->first == "." || it->first == "..")
             continue;
-        body += "<li>\n<a href=\"http://" + req.getHeaders().at("Host") + pathUrl  + it->first +  "\">" + it->first + " ";
+        body += "<li>\n<a href=\"http://" + req.getHeaders().at("host") + pathUrl  + it->first +  "\">" + it->first + " ";
         if (it->second == DT_DIR)
             body += "\xF0\x9F\x93\x81</a>\n</li>\n";
         else
             body += "\xF0\x9F\x93\x84</a>\n</li>\n";
     }
+    pathUrl.erase(pathUrl.length() - 1);
+    if (pathUrl.length() != 1 && pathUrl.find('/') != std::string::npos)
+        body += "<li>\n<a href=\"http://" + req.getHeaders().at("host") + pathUrl.substr(0, pathUrl.find_last_of('/')) \
+        +  "\"> parent directory \xf0\x9f\x94\x99</a>\n</li>\n";
     body += "</ul>\n</body>\n";
     return createResponsePage(200, "OK", header + body);
 }
@@ -127,7 +129,7 @@ std::string Response::createHeaderHtml(std::string title)
 
 static std::string extract_cookies(const std::map<std::string, std::string> &headers){
 
-    std::map <std::string, std::string>::const_iterator it = headers.find("Cookie");
+    std::map <std::string, std::string>::const_iterator it = headers.find("cookie");
     if (it == headers.end())
         return "Set-Cookie: nb_static_visits=1; Max-Age=3600; Path=/";
     size_t i = it->second.find("nb_static_visits=");
@@ -138,6 +140,18 @@ static std::string extract_cookies(const std::map<std::string, std::string> &hea
         return "Set-Cookie: nb_static_visits=1; Max-Age=3600; Path=/";
     return static_cast< std::ostringstream & >(( std::ostringstream() << std::dec << \
     "Set-Cookie: nb_static_visits=" << val + 1 << "; Max-Age=3600; Path=/")).str();
+}
+
+std::string Response::getContentType(std::string file){
+    size_t index = file.find_last_of('.');
+    if (index != std::string::npos && index && index != file.length()){
+        std::string extension = file.substr(index + 1);
+        for (std::map<std::vector<std::string>, std::string>::iterator it = Response::getExt().begin(); it != Response::getExt().end(); it++){
+            if (std::find(it->first.begin(), it->first.end(), extension) != it->first.end())
+                return it->second;
+        }
+    }
+    return "application/octet-stream";
 }
 
 std::string Response::createResponse(Request &req)
@@ -151,21 +165,18 @@ std::string Response::createResponse(Request &req)
     file = file.substr(req.getConfig().getPath().length());
     std::string root = req.getConfig().getRoot().length() ? req.getConfig().getRoot() : "/";
     file = "." + root + file;
-
     if (access(file.c_str(), F_OK) != 0)
         return error(404, "Not Found", req.getConfig().getErrorPages());
     if (access(file.c_str(), R_OK) != 0)
         return error(403, "Forbidden", req.getConfig().getErrorPages());
 
-    // NOT WORKING BELOW
-    // _index is always empty
     if (stat(file.c_str(), &data) == 0
 		&& S_ISDIR(data.st_mode) != 0)
     {
         std::string fileTemp;
         std::vector<std::string>::const_iterator it = req.getConfig().getIndex().begin();
         for (; it != req.getConfig().getIndex().end(); it++){
-            fileTemp = "." + root + "/" + *it;
+            fileTemp = file + "/" + *it;
             if (stat(fileTemp.c_str(), &data) == 0
                 && S_ISREG(data.st_mode) != 0
                 && access(fileTemp.c_str(), R_OK) == 0)
@@ -173,8 +184,9 @@ std::string Response::createResponse(Request &req)
         }
         if (it == req.getConfig().getIndex().end() && req.getConfig().isAutoIndex() == FALSE)
             return error(404, "Not Found", req.getConfig().getErrorPages());
-        if (req.getConfig().isAutoIndex() == TRUE)
+        if (it == req.getConfig().getIndex().end() && req.getConfig().isAutoIndex() == TRUE)
             return createListingFile(file, req.getPath(), req);
+        file = fileTemp;
     }
     std::ifstream infile(file.c_str());
     if (!infile.is_open())
@@ -183,9 +195,8 @@ std::string Response::createResponse(Request &req)
         res.assign(std::istreambuf_iterator<char>(infile), std::istreambuf_iterator<char>());
 
     std::string cookies = extract_cookies(req.getHeaders());
-
     return static_cast< std::ostringstream & >(( std::ostringstream() << std::dec << \
-    "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: " \
+    "HTTP/1.1 200 OK\r\nContent-Type: " << Response::getContentType(file) << "\r\nContent-Length: " \
     << res.length() << "\r\n" << cookies << "\r\n\r\n")).str() + res;
 }
 
@@ -193,14 +204,12 @@ bool Response::handleUpload(Request &req)
 {
     if (req.getMethod() != "POST" && req.getMethod() != "PUT")
         return false;
-    std::map<std::string, std::string>::const_iterator type_it = req.getHeaders().find("Content-Type");
+    std::map<std::string, std::string>::const_iterator type_it = req.getHeaders().find("content-type");
     if (type_it == req.getHeaders().end())
         return false;
     std::string type = type_it->second;
     size_t i = type_it->second.find(";");
     if (i != std::string::npos) type.erase(i);
-    if (type != "multipart/form-data" && type != "form-data")
-        return false;
     size_t b = type_it->second.find("boundary=");
     if (b == std::string::npos){
         Response::sendResponse(req.getSock(), Response::error(400, "Bad Request", req.getConfig().getErrorPages()));
@@ -305,9 +314,9 @@ bool Response::removeUpload(Request &req)
 
 void Response::sendResponse(int sock, std::string content)
 {
-    std::cout  << content << std::endl;
+    if (Server::getResponses().find(sock) != Server::getResponses().end())
+        return;
     Epoll::instance().modFd(sock);
     Server::getResponses()[sock] = content;
-    Server::getRequests().erase(sock);
-	Server::instance().killCGIsock(sock);
+    Server::getRequests().at(sock).setDown();
 }

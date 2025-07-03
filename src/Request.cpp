@@ -28,7 +28,7 @@ Request::Request(void)
 	return;
 }
 
-Request::Request(int sock) : _sock(sock), _time(std::time(NULL))
+Request::Request(int sock) : _sock(sock), _time(std::time(NULL)), _up(true)
 {
 //	_config = Location(Epoll::instance().getFdClientConfigs()[sock][0]);
 
@@ -42,8 +42,10 @@ bool Request::read()
 {
 	char buff[65536];
 	int val = recv(this->_sock, buff, sizeof(buff) - 1, MSG_DONTWAIT);
-	if (val == -1)
+	if (val == -1) {
+		Epoll::instance().delAndCloseSocket(_sock);
 		return false;
+	}
 	if (val == 0) {
 		Epoll::instance().delAndCloseSocket(_sock);
 		return false;
@@ -81,6 +83,7 @@ Request& Request::operator=(const Request &from)
 		_body = from._body;
 		_time = from._time;
 		_config = from._config;
+		_up = from._up;
 	}
 	return (*this);
 }
@@ -121,12 +124,21 @@ std::string Request::getMethod(void) const
 	return(this->_method);
 }
 
+bool Request::getUp(void) const
+{
+	return(this->_up);
+}
+
 const std::map<std::string, std::string> &Request::getHeaders(void) const
 {
 	return(this->_headers);
 }
 
 // Setters
+void Request::setDown()
+{
+	_up = false;
+}
 
 // Public member functions
 void Request::parseRequest()
@@ -178,8 +190,13 @@ bool Request::checkMethod()
 
 bool Request::checkPath()
 {
-	if (_path.find("//") != std::string::npos)
-		return false;
+	size_t hey;
+	while ((hey = _path.find("//")) != std::string::npos)
+		_path.erase(hey, 1);
+	while ((hey = _path.find("/./")) != std::string::npos)
+		_path.erase(hey, 2);
+	if (_path.length() > 1 && _path[_path.length() - 1] == '/')
+		_path.erase(_path.length() - 1);
 	if (_path[0] != '/')
 		return false;
 	if (_path.length() >= 3 && !_path.compare(_path.length() - 3, 3, "/.."))
@@ -187,8 +204,6 @@ bool Request::checkPath()
 	if (_path.length() >= 2 && !_path.compare(_path.length() - 2, 2, "/."))
 		return false;
 	if (_path.find("/../") != std::string::npos)
-		return false;
-	if (_path.find("/./") != std::string::npos)
 		return false;
 	return true;
 }
@@ -214,7 +229,7 @@ std::string Request::extractHeaderKey(std::string& line)
     std::string special_chars = "!#$%&'*+-.^_`|~";
     for (std::string::size_type i = 0; i < colon_pos; ++i)
     {
-        if (!((line[i] >= 'A' && line[i] <= 'Z') || (line[i] >= 'a' && line[i] <= 'z') || (line[i] >= '0' && line[i] <= '9') || special_chars.find(line[i]) != std::string::npos))
+        if (!(std::isalnum(line[i]) || special_chars.find(line[i]) != std::string::npos))
             throw Request::BadRequestException("Bad header formating");
         line[i] = std::tolower(line[i]);
     }
@@ -227,18 +242,16 @@ std::string Request::extractHeaderKey(std::string& line)
     {
         if (key[i] != ' ' && key[i] != '\t')
             lineEmpty = false;
-        if (!((key[i] >= 32 && key[i] <= 126) || key[i] == '\t'))
+        if (!((std::isprint(key[i])) || key[i] == '\t'))
             throw Request::BadRequestException("Bad header formating");
     }
     if (lineEmpty)
         return "";
-    std::cout << "line:" << line << std::endl;
     if (line[0] == ' ' || line[0] == '\t')
         line.erase(0, 1); // Remove leading space or tab
 
     if (line[line.length() - 1] == ' ' || line[line.length() - 1] == '\t')
         line.erase(line.length() - 2, line.length() - 1); // Remove trailing space or tab
-     std::cout << "line:" << line << std::endl;
     if (line[0] == ' ' || line[0] == '\t' || line[line.length() - 1] == ' ' || line[line.length() - 1] == '\t')
         throw Request::BadRequestException("Bad header formating");
     return (key);
@@ -247,7 +260,6 @@ std::string Request::extractHeaderKey(std::string& line)
 std::string Request::extractOneLine()
 {
 	std::string::size_type line_end = this->_raw.find("\r\n");
-    std::cout << line_end << " " <<  this->_raw.find("\r") << " " << this->_raw.find("\n") << std::endl;
 	if (line_end == std::string::npos)
         throw Request::BadRequestException("Bad header formating");
     if (line_end != this->_raw.find("\r") || line_end != this->_raw.find("\n") - 1)

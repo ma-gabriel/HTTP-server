@@ -90,6 +90,11 @@ std::map<int, std::string> &Server::getResponses()
 	return Server::instance()._responses;
 }
 
+std::map<int, CGI::infos> &Server::getCGI()
+{
+	return Server::instance()._CGIs;
+}
+
 std::map<int, Request> &Server::getRequests()
 {
 	return Server::instance()._requests;
@@ -250,12 +255,8 @@ void Server::routineReq()
 		}
 	}
 	for (std::vector<int>::iterator it = to_remove.begin(); it != to_remove.end(); ++it){
-        if (_requests.find(*it) == _requests.end()) {
-            std::cerr << "Request with sock " << *it << " not found in _requests map." << std::endl;
-            continue; // In case the request was already removed
-        }
         if (!_requests.at(*it).getRaw().empty()) {
-            Response::sendResponse(*it, Response::error(504, "Gateway Timeout",
+            Response::sendResponse(*it, Response::error(408, "Request Timeout",
                                                         _requests.at(*it).getConfig().getErrorPages()));
             _requests.erase(*it);
         }
@@ -264,16 +265,19 @@ void Server::routineReq()
 	}
 }
 
-// function to call when closing a socket
 void Server::killCGIsock(int sock){
+	std::vector <int> to_remove;
 	for (std::map<int, CGI::infos>::iterator it = _CGIs.begin(); it != _CGIs.end(); it++){
-		if (it->second.output_fd == sock){
-			kill(it->second.pid, SIGKILL);
-			waitpid(it->second.pid, NULL, 0);
-			delFD(it->first);
-			_CGIs.erase(it->first);
-			return ;
+		if (it->second.output_fd == sock)
+			to_remove.push_back(it->first);
+	}
+	for (std::vector<int>::iterator it = to_remove.begin(); it != to_remove.end(); ++it){
+		if (_CGIs.at(*it).pid != -1){
+			kill(_CGIs.at(*it).pid, SIGKILL);
+			waitpid(_CGIs.at(*it).pid, NULL, 0);
 		}
+		delFD(*it);
+		_CGIs.erase(*it);
 	}
 }
 
@@ -283,7 +287,6 @@ void Server::routineCGI()
 	for (std::map<int, CGI::infos>::iterator it = _CGIs.begin(); it != _CGIs.end(); it++){
 		if (it->second.timestamp + 15 < std::time(NULL)){
 			if (it->second.pid != -1) {
-				Response::sendResponse(it->second.output_fd, Response::error(504, "Gateway Timeout", it->second.config.getErrorPages()));
 				kill(it->second.pid, SIGKILL);
 				waitpid(it->second.pid, NULL, 0);
 			}
@@ -291,15 +294,32 @@ void Server::routineCGI()
 		}
 	}
 	for (std::vector<int>::iterator it = to_remove.begin(); it != to_remove.end(); ++it){
+		if (_CGIs.at(*it).pid != -1)
+			Response::sendResponse(_CGIs.at(*it).output_fd ,Response::error(504, "Gateway Timeout", _CGIs.at(*it).config.getErrorPages()));
 		delFD(*it);
 		_CGIs.erase(*it);
 	}
 }
 
+static bool stop_reading(int sock)
+{
+	char buffer[2];
+	ssize_t len = recv(sock, buffer, 1, MSG_DONTWAIT);
+	if (len <= 0){
+		Epoll::instance().delAndCloseSocket(sock);
+		return false;
+	}
+	Response::sendResponse(sock, Response::error(400, "Bad Request", Server::getRequests().at(sock).getConfig().getErrorPages()));
+	return false;
+	
+}
+
 bool Server::createRequests(int sock)
 {
 	try {
-		if (_requests.at(sock).read())
+		if (!_requests.at(sock).getUp())
+			return (stop_reading(sock));
+		else if (_requests.at(sock).read())
 			return (_requests.at(sock).isValid());
 		return false;
 	}
@@ -311,20 +331,20 @@ bool Server::createRequests(int sock)
 		else if (e == 413)
 			Response::sendResponse(sock, Response::error(413, "Request Entity Too Large", _requests.at(sock).getConfig().getErrorPages()));
 		else if (e == 405)
-			Response::sendResponse(sock, Response::error(405, "Method Not Allowed 	", _requests.at(sock).getConfig().getErrorPages()));
+			Response::sendResponse(sock, Response::error(405, "Method Not Allowed ", _requests.at(sock).getConfig().getErrorPages()));
 		else if (e == 505)
 			Response::sendResponse(sock, Response::error(505, "HTTP Version not supported", _requests.at(sock).getConfig().getErrorPages()));
         else if (e == 414)
 			Response::sendResponse(sock, Response::error(414, "URI Too Long", _requests.at(sock).getConfig().getErrorPages()));
 		else
 			Response::sendResponse(sock, Response::error(500, "Something went wrong", _requests.at(sock).getConfig().getErrorPages()));
-		Server::getRequests().erase(sock);
+		_requests.at(sock).setDown();
 		return false;
 	}
 	catch (...)
 	{
 		Response::sendResponse(sock, Response::error(400, "Bad Request", _requests.at(sock).getConfig().getErrorPages()));
-		Server::getRequests().erase(sock);
+		_requests.at(sock).setDown();
 		return false;
 	}
 }
@@ -377,10 +397,6 @@ int Server::newInstance(std::vector<ConfigurationServer> serverList)
 		close(sock);
 		throw std::runtime_error(std::string("listen: ") + strerror(errno));
 	}
-#ifdef DEBUG
-	std::cout << "Server now listing on " << inet_ntoa(addr.sin_addr) << " port " << port << std::endl;
-#endif
-
 	this->_instances[sock] = serverList;
 	return(sock);
 }

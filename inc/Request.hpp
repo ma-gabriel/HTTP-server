@@ -28,12 +28,14 @@ public:
     // Getters
     int getSock(void) const;
     std::string getVersion(void) const;
+    bool getUp(void) const;
     std::string getPath(void) const;
     const std::string &getBody(void) const;
     time_t getTime(void) const;
     std::string getMethod(void) const;
     const Location &getConfig(void) const;
     const std::map<std::string, std::string> &getHeaders(void) const;
+    void setDown();
     // Setters
     // Public member functions
     void parseRequest(void);
@@ -76,6 +78,7 @@ private:
     std::string	_body;
     std::time_t _time;
     Location _config;
+    bool    _up;
 };
 
 std::ostream& operator<<(std::ostream& stream, const Request& instance);

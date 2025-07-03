@@ -36,15 +36,8 @@ bool doCGI(const Request &req)
 	Location config = req.getConfig();
 
 	std::string filePath = req.getPath().substr(config.getPath().length());
-	
-#ifdef LINUX
 	filePath = CGI::getActualPath(filePath, config.getRoot());
-#else
-	// raphaelperrot made that change
-	// I'm gonna need an explanation on why the line above won't work on mac
-	// due to the need to not be hardcoded 
-	filePath = CGI::getActualPath(req.getPath(), "/Users/raphaelperrot/webserv2/CGI-scripts");
-#endif
+
 	try {
 		extensions = decompose_cgi(config.getCgi());
 	} catch(...){
@@ -118,7 +111,7 @@ void CGI::parentHandling(pid_t pid)
 		return ;
 	}
 	if (_body.length() > 0)
-		Server::instance().addCGI(_toCGI[1], CGI::infos(std::time(NULL), -1, -1, _body, _config), false);
+		Server::instance().addCGI(_toCGI[1], CGI::infos(std::time(NULL), -1, _socket, _body, _config), false);
 	else
 		close(_toCGI[1]);
 	Server::instance().addCGI(_fromCGI[0], CGI::infos(std::time(NULL), pid, _socket, "", _config), true);

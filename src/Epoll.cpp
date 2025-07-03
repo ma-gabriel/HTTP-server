@@ -150,7 +150,7 @@ void Epoll::handleEvents(int sock)
 		std::cout << "Receiving new request from " << serv.getClientAddress(sock) << std::endl;
 #endif
 		serv.handleRequest(sock);
-		serv.getRequests().erase(sock);
+		
 	}
 }
 
@@ -162,8 +162,7 @@ void Epoll::handleNewClients(int sock) {
 		this->_fdClientsConfigs[client_sock] = Server::getInstances()[sock];
 		Server::getRequests().insert(std::make_pair(client_sock, Request(client_sock)));
 #if DEBUG
-		std::cout << "New client connected on socket: " << client_sock << std::endl << std::endl;
-		std::cout << "server client: " << this->_fdClientsConfigs[client_sock] << std::endl << std::endl;
+		std::cout << "New client connected on socket: " << client_sock << std::endl;
 #endif
 	}
 }

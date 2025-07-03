@@ -15,7 +15,9 @@ public:
     static void sendResponse(int sock, std::string content);
     static std::string createResponseRedirect(Request &request);
     static bool handleUpload(Request &req);
+    static std::string getContentType(std::string file);
     static bool removeUpload(Request &req);
+    static std::map<std::vector<std::string>, std::string> &getExt();
 
 private:
 // Private constructor
@@ -28,6 +30,8 @@ private:
     Response(void);
     static std::string createHeaderHtml(std::string title);
     static std::string createResponsePage(size_t code, std::string infoCode, std::string body);
+
+
 };
 
 std::ostream& operator<<(std::ostream& stream, const Response& instance);

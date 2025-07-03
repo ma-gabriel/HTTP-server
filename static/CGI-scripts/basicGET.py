@@ -2,7 +2,6 @@
 print("Content-Type: text/html\r\n\r\n")
 
 print("""<!DOCTYPE html>
-
 <html>
 <head>
 <meta charset="UTF-8">
@@ -31,8 +30,9 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 <span class="Comment">### config</span>
 <span class="Identifier">NAME		</span>= webserv
 <span class="Identifier">CXX			</span>= c++
-<span class="Identifier">CFLAGS		</span>= -std=c++98 -Wall -Werror -Wextra
+<span class="Identifier">CFLAGS		</span>= -std=c++98 -Wall -Werror -Wextra -g3
 <span class="Identifier">DEPFLAGS	</span>= -MMD -MP
+<span class="Identifier">OS          </span>= <span class="Identifier">$(</span><span class="Statement">shell</span><span class="Identifier"> uname)</span>
 
 
 <span class="Comment">### program files</span>
@@ -40,7 +40,32 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 <span class="Identifier">SRCS_PATH		</span>= ./src
 <span class="Identifier">INCLUDE_PATH	</span>= ./inc
 <span class="Identifier">OBJ_PATH		</span>= ./.obj
-<span class="Identifier">SRCS			</span>= <span class="Identifier">$(</span><span class="Statement">wildcard</span><span class="Identifier"> $(SRCS_PATH)/*$(FILE_EXTENSION))</span>
+<span class="Identifier">SRCS_FILES		</span>= main.cpp <span class="Special">\</span>
+<span class="Special">                  </span>Request.cpp <span class="Special">\</span>
+<span class="Special">                  </span>Response.cpp <span class="Special">\</span>
+<span class="Special">                  </span>Server.cpp <span class="Special">\</span>
+<span class="Special">                  </span>Atributes.cpp <span class="Special">\</span>
+<span class="Special">                  </span>Location.cpp <span class="Special">\</span>
+<span class="Special">                  </span>Parser.cpp <span class="Special">\</span>
+<span class="Special">                  </span>args.cpp <span class="Special">\</span>
+<span class="Special">                  </span>ConfigurationServer.cpp <span class="Special">\</span>
+<span class="Special">                  </span>utils/isSeparator.cpp <span class="Special">\</span>
+<span class="Special">                  </span>utils/strNoCase.cpp <span class="Special">\</span>
+<span class="Special">                  </span>utils/strIsdigit.cpp <span class="Special">\</span>
+<span class="Special">                  </span>utils/findInsensitive.cpp <span class="Special">\</span>
+<span class="Special">                  </span>utils/getExt.cpp <span class="Special">\</span>
+<span class="Special">                  </span>exceptions/LocationException.cpp <span class="Special">\</span>
+<span class="Special">                  </span>Redirection.cpp <span class="Special">\</span>
+<span class="Special">                  </span>Epoll.cpp <span class="Special">\</span>
+<span class="Special">                  </span>CGI.cpp <span class="Special">\</span>
+<span class="Special">                  </span>addRedirect.cpp <span class="Special">\</span>
+
+
+<span class="PreProc">ifeq</span> (<span class="Identifier">$(OS)</span>, Linux)
+	CFLAGS += -DLINUX
+<span class="PreProc">endif</span>
+
+<span class="Identifier">SRCS </span>= <span class="Identifier">$(</span><span class="Statement">addprefix</span><span class="Identifier"> $(SRCS_PATH)/, $(SRCS_FILES))</span>
 <span class="Identifier">HEADERS			</span>= <span class="Identifier">$(</span><span class="Statement">wildcard</span><span class="Identifier"> $(INCLUDE_PATH)/*.hpp)</span>
 
 <span class="Comment">### objects definition</span>
@@ -49,6 +74,7 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 
 <span class="Comment">### Makefile rules</span>
 <span class="Identifier">all:</span> <span class="Identifier">$(NAME)</span>
+<span class="Special">	@</span><span class="Constant">mkdir -p static/uploads</span>
 
 <span class="Identifier">$(NAME):</span> <span class="Identifier">${OBJS}</span>
 <span class="Constant">	</span><span class="Identifier">$(CXX)</span><span class="Constant"> </span><span class="Identifier">$(CFLAGS)</span><span class="Constant"> -o </span><span class="Identifier">$@</span><span class="Constant"> </span><span class="Identifier">${OBJS}</span>
@@ -61,6 +87,7 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 <span class="Special">	@</span><span class="Constant">rm -fr </span><span class="Identifier">$(OBJ_PATH)</span>
 
 <span class="Identifier">fclean:</span> clean
+<span class="Special">	@</span><span class="Constant">rm -rf static/uploads/*</span>
 <span class="Special">	@</span><span class="Constant">rm -rf </span><span class="Identifier">$(NAME)</span>
 
 <span class="Identifier">debug:</span> fclean
@@ -75,4 +102,5 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 </pre>
 </body>
 </html>
+<!-- vim: set foldmethod=manual : -->
 """)

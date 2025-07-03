@@ -10,6 +10,5 @@ bool check_args(int argc, char **argv) {
         std::cerr << "Configuration file must end with .conf" << std::endl;
         return false;
     }
-    //that's basically it
     return true;
 }

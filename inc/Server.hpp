@@ -50,6 +50,7 @@ public:
 	static std::map<int, std::vector<ConfigurationServer> > getInstances();
 	static std::map<int, Request> &getRequests();
 	static std::map<int, std::string> &getResponses();
+	std::map<int, CGI::infos> &getCGI();
 
 	static void writeResponses(int sock);
 
