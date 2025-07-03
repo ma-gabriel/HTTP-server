@@ -162,9 +162,11 @@ std::string Response::createResponse(Request &req)
 
     size_t query = file.find('?');
     if (query != std::string::npos) file.erase(query);
-    file = file.substr(req.getConfig().getPath().length());
+    const std::string c_path = req.getConfig().getPath();
+    if (!c_path.length() || c_path[c_path.length() - 1] != '/') file = file.substr(c_path.length());
     std::string root = req.getConfig().getRoot().length() ? req.getConfig().getRoot() : "/";
     file = "." + root + file;
+    if (file[file.length() - 1] == '/') file.erase(file.length() - 1);
     if (access(file.c_str(), F_OK) != 0)
         return error(404, "Not Found", req.getConfig().getErrorPages());
     if (access(file.c_str(), R_OK) != 0)

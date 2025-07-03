@@ -158,8 +158,6 @@ void Request::parseFirstLine()
 	getline(stream, this->_version, '\r');
     if (this->_path.empty() || this->_path[0] != '/')
         this->_path = "/" + this->_path; // Ensure path starts with '/'
-    if (this->_path[this->_path.length() - 1] == '/' && this->_path.length() > 1)
-        this->_path.erase(this->_path.length() - 1);
     if (this->_path.length() > 4096)
         throw 414;
 }
@@ -190,15 +188,11 @@ bool Request::checkMethod()
 
 bool Request::checkPath()
 {
-	size_t hey;
-	while ((hey = _path.find("//")) != std::string::npos)
-		_path.erase(hey, 1);
-	while ((hey = _path.find("/./")) != std::string::npos)
-		_path.erase(hey, 2);
-	if (_path.length() > 1 && _path[_path.length() - 1] == '/')
-		_path.erase(_path.length() - 1);
-	if (_path[0] != '/')
-		return false;
+	size_t i;
+	while ((i = _path.find("//")) != std::string::npos)
+		_path.erase(i, 1);
+	while ((i = _path.find("/./")) != std::string::npos)
+		_path.erase(i, 2);
 	if (_path.length() >= 3 && !_path.compare(_path.length() - 3, 3, "/.."))
 		return false;
 	if (_path.length() >= 2 && !_path.compare(_path.length() - 2, 2, "/."))
@@ -330,6 +324,8 @@ const std::string &Request::getRaw() const {
 
 static Location *decide_location(std::map<std::string, Location> &dict, std::string path)
 {
+	size_t len = 0;
+	Location *res;
     for (std::map<std::string, Location>::iterator it = dict.begin(); it != dict.end(); ++it)
     {
         if (path.find(it->first) == 0) // Check if path starts with the location path
@@ -340,13 +336,15 @@ static Location *decide_location(std::map<std::string, Location> &dict, std::str
             if (path[path.length() - 1] != '/') // If request path ends with '/', it matches the exact location
                 path += '/';
             std::string pathAdapted = path.substr(0, pathLocation.length());
-            if (pathAdapted == pathLocation) // Exact match or subdirectory
-            {
-                return &(it->second);
-            }
+            if (pathAdapted == pathLocation && len < pathAdapted.length()){
+				len = pathAdapted.length();
+				res = &it->second;
+			}
         }
     }
-    return NULL;
+	if (len == 0)
+		return NULL;
+	return res;
 }
 
 std::string getMethodString(EHttpMethode method) {
