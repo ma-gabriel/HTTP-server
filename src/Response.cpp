@@ -307,7 +307,7 @@ bool Response::handleUpload(Request &req)
         }
         outfile << it->second;
         outfile.close();
-        body += std::string(((it == files.begin()) ? "" : ",")) + "{\"filename\": \"" + it->first + "\",\"url\": \"./static/uploads/" + it->first + "\"}";
+        body += std::string(((it == files.begin()) ? "" : ",")) + "{\"filename\": \"" + it->first + "\",\"url\": \"static/uploads/" + it->first + "\"}";
     }
     body += " ]";
     res = "HTTP/1.1 201 Created\r\nLocation: /static/uploads\r\nContent-Type: application/json\r\nContent-Length: ";
