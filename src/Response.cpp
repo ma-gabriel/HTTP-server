@@ -90,8 +90,9 @@ std::string Response::error(int error, std::string name, std::map<int, std::stri
     while ((entry = readdir(dir))) {
         filesInfo.insert(std::make_pair(entry->d_name, entry->d_type));
     }
+    closedir(dir);
     std::string headerHtml = createHeaderHtml(pathFile);
-    if (req.getHeaders().find("host") == req.getHeaders().end()) {
+    if (req.getHeaders().find("HOST") == req.getHeaders().end()) {
         return Response::error(400, "Bad Request", req.getConfig().getErrorPages());
     }
     if (!pathUrl.empty() && pathUrl[pathUrl.size() - 1] != '/')
@@ -101,7 +102,7 @@ std::string Response::error(int error, std::string name, std::map<int, std::stri
          it != filesInfo.end(); ++it) {
         if (it->first == "." || it->first == "..")
             continue;
-        body += "<li>\n<a href=\"http://" + req.getHeaders().at("host") + pathUrl  + it->first +  "\">" + it->first + " ";
+        body += "<li>\n<a href=\"http://" + req.getHeaders().at("HOST") + pathUrl  + it->first +  "\">" + it->first + " ";
         if (it->second == DT_DIR)
             body += "\xF0\x9F\x93\x81</a>\n</li>\n";
         else
@@ -109,7 +110,7 @@ std::string Response::error(int error, std::string name, std::map<int, std::stri
     }
     pathUrl.erase(pathUrl.length() - 1);
     if (pathUrl.length() != 1 && pathUrl.find('/') != std::string::npos)
-        body += "<li>\n<a href=\"http://" + req.getHeaders().at("host") + pathUrl.substr(0, pathUrl.find_last_of('/')) \
+        body += "<li>\n<a href=\"http://" + req.getHeaders().at("HOST") + pathUrl.substr(0, pathUrl.find_last_of('/')) \
         +  "\"> parent directory \xf0\x9f\x94\x99</a>\n</li>\n";
     body += "</ul>\n</body>\n";
     return createResponsePage(200, "OK", header + body);
@@ -206,7 +207,7 @@ bool Response::handleUpload(Request &req)
 {
     if (req.getMethod() != "POST" && req.getMethod() != "PUT")
         return false;
-    std::map<std::string, std::string>::const_iterator type_it = req.getHeaders().find("content-type");
+    std::map<std::string, std::string>::const_iterator type_it = req.getHeaders().find("CONTENT-TYPE");
     if (type_it == req.getHeaders().end())
         return false;
     std::string type = type_it->second;
@@ -246,7 +247,7 @@ bool Response::handleUpload(Request &req)
         std::string headers = part.substr(0, header_end);
         std::string content = part.substr(header_end + 4); // skip \r\n\r\n
 
-        size_t cd_pos = headers.find("Content-Disposition:");
+        size_t cd_pos = headers.find("Content-Disposition");
         if (cd_pos == std::string::npos){
             Response::sendResponse(req.getSock(), Response::error(400, "Bad Request", req.getConfig().getErrorPages()));
             return true;
@@ -312,7 +313,6 @@ bool Response::removeUpload(Request &req)
         Response::sendResponse(req.getSock(), Response::error(500, "Internal Server Error", req.getConfig().getErrorPages()));
     return true;
 }
-
 
 void Response::sendResponse(int sock, std::string content)
 {

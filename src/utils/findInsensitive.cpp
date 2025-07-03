@@ -12,3 +12,9 @@ size_t findInsensitive(const std::string& haystack, const std::string& needle) {
     std::string needleLower = toLower(needle);
     return haystackLower.find(needleLower);
 }
+
+std::string toUpper(const std::string& s) {
+    std::string res = s;
+    std::transform(res.begin(), res.end(), res.begin(), ::toupper);
+    return res;
+}
