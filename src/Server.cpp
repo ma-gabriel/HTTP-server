@@ -250,7 +250,7 @@ void Server::routineReq()
 {
 	std::vector <int> to_remove;
 	for (std::map<int, Request>::iterator it = _requests.begin(); it != _requests.end(); it++){
-		if (it->second.getTime() + 5 < std::time(NULL)){
+		if (it->second.getUp() && it->second.getTime() + 5 < std::time(NULL)){
 			to_remove.push_back(it->first);
 		}
 	}
@@ -258,7 +258,7 @@ void Server::routineReq()
         if (!_requests.at(*it).getRaw().empty()) {
             Response::sendResponse(*it, Response::error(408, "Request Timeout",
                                                         _requests.at(*it).getConfig().getErrorPages()));
-            _requests.erase(*it);
+            _requests.at(*it).setDown();
         }
         else
             Epoll::instance().delAndCloseSocket(*it);
@@ -285,7 +285,7 @@ void Server::routineCGI()
 {
 	std::vector <int> to_remove;
 	for (std::map<int, CGI::infos>::iterator it = _CGIs.begin(); it != _CGIs.end(); it++){
-		if (it->second.timestamp + 15 < std::time(NULL)){
+		if (it->second.timestamp + 10 < std::time(NULL)){
 			if (it->second.pid != -1) {
 				kill(it->second.pid, SIGKILL);
 				waitpid(it->second.pid, NULL, 0);
@@ -295,7 +295,7 @@ void Server::routineCGI()
 	}
 	for (std::vector<int>::iterator it = to_remove.begin(); it != to_remove.end(); ++it){
 		if (_CGIs.at(*it).pid != -1)
-			Response::sendResponse(_CGIs.at(*it).output_fd ,Response::error(504, "Gateway Timeout", _CGIs.at(*it).config.getErrorPages()));
+			Response::sendResponse(_CGIs.at(*it).output_fd, Response::error(504, "Gateway Timeout", _CGIs.at(*it).config.getErrorPages()));
 		delFD(*it);
 		_CGIs.erase(*it);
 	}
@@ -325,7 +325,6 @@ bool Server::createRequests(int sock)
 	}
 	catch (const int &e)
 	{
-
 		if (e == 400)
 			Response::sendResponse(sock, Response::error(400, "Bad Request", _requests.at(sock).getConfig().getErrorPages()));
 		else if (e == 413)

@@ -76,16 +76,6 @@ int Epoll::getFd(void) const
 	return (this->_fd);
 }
 
-// #ifdef LINUX
-// epoll_event* Epoll::getEventsPtr(void) const
-// {
-// 	return (instance()._events);
-// }
-// #else
-// struct kevent *Epoll::getKevents(void) const {
-// 	return instance()._events;
-// }
-// #endif
 
 void Epoll::routine()
 {
@@ -94,7 +84,7 @@ void Epoll::routine()
 	int event_quant;
 
 	event_quant = epoll_wait(this->_fd, this->_events, MAXEVENT, 1000);
-	// once a sec, checks thatno timeout (err 504)
+	// once a sec, checks that no timeout
 	if (event_quant == -1 && errno != EINTR){
 		perror("epoll_wait");
 	}
@@ -150,6 +140,7 @@ void Epoll::handleEvents(int sock)
 		std::cout << "Receiving new request from " << serv.getClientAddress(sock) << std::endl;
 #endif
 		serv.handleRequest(sock);
+		Server::getRequests().at(sock).setDown();
 		
 	}
 }

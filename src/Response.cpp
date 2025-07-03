@@ -96,6 +96,7 @@ std::string Response::error(int error, std::string name, std::map<int, std::stri
     }
     if (!pathUrl.empty() && pathUrl[pathUrl.size() - 1] != '/')
         pathUrl += '/';
+    size_t nb_lines = 0;
     std::string body = "<body>\n<h1>\nIndex of " + pathUrl + "\n</h1>\n<ul>\n";
     for (std::multimap<std::string, unsigned char>::const_iterator it = filesInfo.begin();
          it != filesInfo.end(); ++it) {
@@ -106,7 +107,11 @@ std::string Response::error(int error, std::string name, std::map<int, std::stri
             body += "\xF0\x9F\x93\x81</a>\n</li>\n";
         else
             body += "\xF0\x9F\x93\x84</a>\n</li>\n";
+        if (nb_lines++ >= 50)
+            break;
     }
+    if (nb_lines >= 50)
+        body += "\n...\n\n";
     pathUrl.erase(pathUrl.length() - 1);
     if (pathUrl.length() != 1 && pathUrl.find('/') != std::string::npos)
         body += "<li>\n<a href=\"http://" + req.getHeaders().at("host") + pathUrl.substr(0, pathUrl.find_last_of('/')) \
