@@ -135,7 +135,7 @@ std::string Response::createHeaderHtml(std::string title)
 
 static std::string extract_cookies(const std::map<std::string, std::string> &headers){
 
-    std::map <std::string, std::string>::const_iterator it = headers.find("cookie");
+    std::map <std::string, std::string>::const_iterator it = headers.find("COOKIE");
     if (it == headers.end())
         return "Set-Cookie: nb_static_visits=1; Max-Age=3600; Path=/";
     size_t i = it->second.find("nb_static_visits=");
@@ -279,19 +279,39 @@ bool Response::handleUpload(Request &req)
         return true;
     }
 
+    struct stat data;
+    if (stat("static/uploads", &data)){
+        Response::sendResponse(req.getSock(), Response::error(404, "Not Found", req.getConfig().getErrorPages()));
+        return true;
+    }
+    if (S_ISDIR(data.st_mode) == 0){
+        Response::sendResponse(req.getSock(), Response::error(409, "Conflict", req.getConfig().getErrorPages()));
+        return true;
+    }
+    if (access("static/uploads", X_OK)){
+        Response::sendResponse(req.getSock(), Response::error(403, "Forbidden", req.getConfig().getErrorPages()));
+        return true;
+    }
     for (std::map<std::string, std::string>::iterator it = files.begin(); it != files.end(); it++){
         if (!access(("./static/uploads/" + it->first).c_str(), F_OK)){
             Response::sendResponse(req.getSock(), Response::error(409, "Conflict", req.getConfig().getErrorPages()));
             return true;
         }
     }
+    std::string body = "[ ", res;
     for (std::map<std::string, std::string>::iterator it = files.begin(); it != files.end(); it++){
         std::ofstream outfile(("./static/uploads/" + it->first).c_str());
-        if (outfile)
-            outfile << it->second;
+        if (!outfile){
+            Response::sendResponse(req.getSock(), Response::error(422, "Unprocessable Content", req.getConfig().getErrorPages()));
+            return true;
+        }
+        outfile << it->second;
         outfile.close();
+        body += std::string(((it == files.begin()) ? "" : ",")) + "{\"filename\": \"" + it->first + "\",\"url\": \"./static/uploads/" + it->first + "\"}";
     }
-    Response::sendResponse(req.getSock(), Response::error(201, "Created", req.getConfig().getErrorPages()));
+    body += " ]";
+    res = "HTTP/1.1 201 Created\r\nLocation: /static/uploads\r\nContent-Type: application/json\r\nContent-Length: ";
+    Response::sendResponse(req.getSock(), res + static_cast< std::ostringstream & >(( std::ostringstream() << std::dec << body.length() << "\r\n\r\n")).str() + body);
     return true;
 }
 

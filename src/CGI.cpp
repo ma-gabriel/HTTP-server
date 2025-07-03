@@ -173,7 +173,6 @@ void CGI::flush(int fd, std::string text){
     catch (...) {
         text = Response::error(502, "Bad Gateway", Server::getRequests().at(fd).getConfig().getErrorPages());
     }
-    std::cout << text;
 	Response::sendResponse(fd, text);
 }
 

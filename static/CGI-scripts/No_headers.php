@@ -1,3 +1,3 @@
 <?php
-echo "Yeepi";
+echo "What's up ?";
 ?>
