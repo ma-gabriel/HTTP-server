@@ -21,6 +21,7 @@ public:
     // Constructors
     Request(int sock);
     Request(const Request &from);
+    Request(const std::string &raw);
     // Destructors
     ~Request(void);
     // Overloaded operators

@@ -9,5 +9,6 @@ bool        strIsDigit(const std::string &str);
 bool        check_args(int argc, char **argv);
 std::string toLower(const std::string& s);
 size_t      findInsensitive(const std::string& haystack, const std::string& needle);
+std::string toUpper(const std::string& s);
 #endif // WEBSERV2_UTILS_HPP
 

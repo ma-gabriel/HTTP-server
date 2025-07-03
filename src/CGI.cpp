@@ -148,33 +148,35 @@ void CGI::childExec(std::map<std::string,std::string> &envRaw)
 }
 
 void CGI::flush(int fd, std::string text){
-	size_t body = text.find("\r\n\r\n");
-	if (body == std::string::npos) {
-		text = static_cast< std::ostringstream & >(( std::ostringstream() << std::dec << \
-			"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: " << text.length() << "\r\n\r\n")).str() + text;
-
-	} else {
-		size_t status = text.find("Status: ");
-		size_t length = text.find("Content-Length: ");
-		size_t type = text.find("Content-Type: ");
-		if (status != std::string::npos && status < body){
-			std::string buff = text.substr(status + 8, text.find("\r\n", status) - status - 8);
-			text.erase(status, buff.length() + 8);
-			std::string status_line = "HTTP/1.1 " + buff;
-			text = status_line + text;
-		}
-		else text = "HTTP/1.1 200 OK\r\n" + text;
-		if (type == std::string::npos || type > body){
-			text.insert(text.find("\r\n\r\n") + 2, "Content-Type: text/html\r\n");
-		}
-		if (length == std::string::npos || body == std::string::npos || length > body){
-			text.insert(text.find("\r\n\r\n") + 2, static_cast< std::ostringstream & >((std::ostringstream() << std::dec \
-			<< "Content-Length: " << text.length() - text.find("\r\n\r\n") - 4 << "\r\n")).str());
-		}
-	}
-
+    try {
+        Request request(text);
+        std::map<std::string, std::string>::const_iterator status = request.getHeaders().find("STATUS");
+        std::map<std::string, std::string>::const_iterator  length = request.getHeaders().find("CONTENT-LENGTH");
+        std::map<std::string, std::string>::const_iterator  type = request.getHeaders().find("CONTENT-TYPE");
+        if (status != request.getHeaders().end()){
+            std::string status_line = status->second;
+            size_t i = findInsensitive(text, "\r\nStatus:");
+            if (i == std::string::npos)
+                i = findInsensitive(text, "Status:");
+            text.erase(i, text.find("\r\n", i) - i + 2);
+            text = "HTTP/1.1 " + status_line + text ;
+        }
+        else
+            text = "HTTP/1.1 200 OK\r\n" + text;
+        if (length == request.getHeaders().end()){
+            text.insert(text.find("\r\n\r\n") + 2, static_cast< std::ostringstream & >((std::ostringstream() << std::dec \
+        << "Content-Length: " << text.length() - text.find("\r\n\r\n") - 4 << "\r\n")).str());
+        }
+        if (type == request.getHeaders().end())
+            text = Response::error(502, "Bad Gateway", Server::getRequests().at(fd).getConfig().getErrorPages());
+    }
+    catch (...) {
+        text = Response::error(502, "Bad Gateway", Server::getRequests().at(fd).getConfig().getErrorPages());
+    }
+    std::cout << text;
 	Response::sendResponse(fd, text);
 }
+
 
 /**
  * remove anything from the after any ? character found 

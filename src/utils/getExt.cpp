@@ -13,11 +13,6 @@ std::map<std::vector<std::string>, std::string> &Response::getExt()
     vals.push_back("shtml");
     extensions[vals] = "text/html";
     vals.clear();
-    vals.push_back("html");
-    vals.push_back("htm");
-    vals.push_back("shtml");
-    extensions[vals] = "text/html";
-    vals.clear();
     vals.push_back("css");
     extensions[vals] = "text/css";
     vals.clear();

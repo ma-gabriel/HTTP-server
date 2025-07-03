@@ -28,6 +28,15 @@ Request::Request(void)
 	return;
 }
 
+Request::Request(const std::string &raw){
+    this->_raw =  raw;
+    size_t body = this->_raw.find("\r\n\r\n");
+    if (body != std::string::npos) {
+        this->_body = this->_raw.substr(body + 4);
+        this->_raw = this->_raw.substr(0, body + 4);
+    }
+    this->extractHeaders();
+}
 Request::Request(int sock) : _sock(sock), _time(std::time(NULL)), _up(true)
 {
 //	_config = Location(Epoll::instance().getFdClientConfigs()[sock][0]);
@@ -248,7 +257,7 @@ std::string Request::extractHeaderKey(std::string& line)
         line.erase(line.length() - 2, line.length() - 1); // Remove trailing space or tab
     if (line[0] == ' ' || line[0] == '\t' || line[line.length() - 1] == ' ' || line[line.length() - 1] == '\t')
         throw Request::BadRequestException("Bad header formating");
-    return (key);
+    return (toUpper(key));
 }
 
 std::string Request::extractOneLine()

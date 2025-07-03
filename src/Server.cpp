@@ -458,7 +458,6 @@ std::ostream& operator<<(std::ostream& stream, Server& server)
 	return (stream);
 }
 
-
 void Server::writeResponses(int sock)
 {
 	std::string &str = Server::instance()._responses[sock];
