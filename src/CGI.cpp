@@ -219,7 +219,7 @@ std::string CGI::getPathInfo(std::string address, std::map<std::string,std::stri
 		size_t ext = 0;
 		do ext = address.find(it->first + "/", ext);
 		while (ext != std::string::npos && address[ext - 1] == '/');
-		if (ext != std::string::npos) return address.substr(ext + it->first.length() + 1);
+		if (ext != std::string::npos) return address.substr(ext + it->first.length());
 		if (endsWith(address, it->first) && address != it->first) return std::string();
 	}
 	return std::string();
@@ -287,7 +287,7 @@ void CGI::add_headers(std::map<std::string,std::string> &env, const Request &req
 	env["REQUEST_METHOD"] = req.getMethod();
 	env["QUERY_STRING"] = _query;
 	env["PATH_INFO"] = _pathInfo;
-	env["SCRIPT_NAME"] = _fileLocation + "/" + _fileName;
+	env["SCRIPT_NAME"] = _fileLocation.substr(1) + "/" + _fileName;
 	env["GATEWAY_INTERFACE"] = "CGI/1.1";
 };
 
